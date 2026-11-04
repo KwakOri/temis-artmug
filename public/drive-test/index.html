@@ -27,7 +27,7 @@
 
 <div id="up">
   <h2>1. 이미지 올리기</h2>
-  <p><button id="pick" class="main">로그인하고 이미지 고르기 (3~6장)</button>
+  <p><button id="pick" class="main">1) 구글 로그인</button>
   <input id="file" type="file" accept="image/*" multiple hidden></p>
 </div>
 
@@ -102,9 +102,13 @@ async function upload(blob, name) {
   return made.id;
 }
 
+// 로그인 창이 닫힌 뒤에는 브라우저가 파일 창을 막으므로, 로그인과 고르기를 두 번의 클릭으로 나눈다.
 $("#pick").onclick = async () => {
-  try { await loadGis(); await signIn(); log("로그인됨"); $("#file").click(); }
-  catch (e) { log("✗ " + e.message); }
+  if (token) return $("#file").click();
+  try {
+    await loadGis(); await signIn(); log("로그인됨 — 버튼을 한 번 더 눌러 이미지를 고르세요");
+    $("#pick").textContent = "이미지 고르기 (3~6장)";
+  } catch (e) { log("✗ " + e.message); }
 };
 $("#file").onchange = async (ev) => {
   const files = [...ev.target.files];
