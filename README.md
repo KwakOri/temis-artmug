@@ -12,9 +12,9 @@ https://artmug.temis.kr/ (예전 kwakori.github.io/temis-artmug/는 이리로 �
 
 ## 편집기 (/edit)
 - 손님이 만든 깃허브 fine-grained 토큰(이 저장소만, Contents: Read and write)을 한 번 넣으면, 「저장」이 `public/content.json`과 새 사진을 커밋 하나로 올린다. 토큰은 그 브라우저 localStorage에만 있다.
-- 커밋되면 `.github/workflows/deploy.yml`이 빌드·배포하고, 편집기는 배포된 `content.json`의 `updatedAt`을 보고 「적용됐어요」를 알린다(보통 1~2분).
+- 커밋되면 `.github/workflows/deploy.yml`이 빌드해 gh-pages 가지에 올리고(Pages는 그 가지를 띄움), 편집기는 배포된 `content.json`의 `updatedAt`을 보고 「적용됐어요」를 알린다(보통 1~2분).
 - 사진은 브라우저에서 긴 변 720/1600으로 줄여 올리고, 빠진 사진 파일은 지운다(기본값이 쓰는 사진은 남김).
-- 저장소 Settings → Pages → Source는 「GitHub Actions」여야 한다.
+- 저장소 Settings → Pages는 「Deploy from a branch: gh-pages / (root)」. gh-pages를 처음 올리면 저절로 이렇게 켜진다.
 
 ## 실행 / 빌드
 
@@ -58,5 +58,5 @@ iframe 예: `<iframe src="https://<계정>.github.io/<저장소>/" style="width:
 
 ## 손님(판매자) 페이지
 
-- 손님 한 명 = 손님 명의 깃허브 계정의 저장소 하나. 이 저장소를 복사해 `src/site.ts`를 바꾸고, Pages Source를 「GitHub Actions」로 켠다.
+- 손님 한 명 = 손님 명의 깃허브 계정의 저장소 하나. 이 저장소를 복사해 `src/site.ts`를 바꾸고 main에 올리면 Actions가 gh-pages를 만들어 Pages가 켜진다.
 - 주소: 상세페이지 `/`, 편집기 `/edit`. Temis는 artmug.temis.kr(`public/CNAME`), 손님은 `<계정>.github.io/<저장소>/`.

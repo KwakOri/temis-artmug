@@ -1,23 +1,18 @@
-# main에 올라오면(편집기 저장 포함) 빌드해서 GitHub Pages에 배포한다.
-# 저장소 Settings → Pages → Source를 「GitHub Actions」로 한 번 바꿔 둬야 한다.
+# main에 올라오면(편집기 저장 포함) 빌드해서 gh-pages 가지에 올린다. Pages는 gh-pages 가지를 그대로 띄운다.
+# (gh-pages를 처음 올리면 Pages가 저절로 켜져서, 저장소 설정을 따로 바꿀 필요가 없다.)
 name: deploy
 on:
   push:
     branches: [main]
   workflow_dispatch:
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 concurrency:
-  group: pages
+  group: deploy
   cancel-in-progress: true
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -26,9 +21,12 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: dist
-      - id: deployment
-        uses: actions/deploy-pages@v4
+      - name: gh-pages에 올리기
+        run: |
+          cd dist
+          git init -q -b gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Deploy ${GITHUB_SHA::7}: $(git -C .. log -1 --format=%s)"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${GITHUB_REPOSITORY}.git" gh-pages
