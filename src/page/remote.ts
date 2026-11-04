@@ -4,7 +4,7 @@ import { doc, type Doc } from "./data";
 
 export const REMOTE = {
   clientId: "76722884494-r8of5elhefhh1j0583rbr8i9dpo5ihai.apps.googleusercontent.com",
-  apiKey: "",
+  apiKey: "AIzaSyB3GzQ2fz2c_s03WkvD5nNd_UL10YZLk3c",
   /** /edit 첫 저장 때 만든 파일 ID. 비어 있으면 페이지는 data.ts 기본값만 쓴다. */
   fileId: "",
   fileName: "temis-artmug-page.json",
