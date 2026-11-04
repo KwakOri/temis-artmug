@@ -13,6 +13,7 @@
   --color-timetable-input-bg: #dcd0c6;
   --color-timetable-input-hover: #e0d8d0;
   --color-timetable-form-bg: #f5f0ed;
+  --color-ink: #3b2a24;
 }
 
 .scrollbar-hide::-webkit-scrollbar {
@@ -27,6 +28,8 @@ body {
   font-family: "Pretendard Variable", "Pretendard", sans-serif;
   background-color: #f5f0ed;
   -webkit-text-size-adjust: 100%;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 
 button {
