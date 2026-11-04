@@ -1,3 +1,4 @@
+import { resolve } from "node:path";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
@@ -6,5 +7,9 @@ import tailwindcss from "@tailwindcss/vite";
 export default defineConfig({
   base: "./",
   plugins: [react(), tailwindcss()],
-  build: { assetsInlineLimit: 0 },
+  // edit.html : 주인용 문구·가격 편집기(GitHub Pages에서 /edit 주소로 열림)
+  build: {
+    assetsInlineLimit: 0,
+    rollupOptions: { input: { main: resolve(__dirname, "index.html"), edit: resolve(__dirname, "edit.html") } },
+  },
 });
