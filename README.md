@@ -1,0 +1,44 @@
+# 시간표 체험 존 (아트머그 상세페이지용)
+
+요일 카드 1장 + 그 카드의 입력 세트 1개만 있는 정적 페이지. 아트머그 상세페이지에 iframe으로 넣는다.
+저장·다운로드·로그인·프로필 이미지·아티스트·메모·외부 링크 없음.
+
+## 실행 / 빌드
+
+```bash
+npm install
+npm run dev       # 개발 서버
+npm run build     # dist/ 생성 (base './' — GitHub Pages 하위 폴더 어디든 그대로 올리면 됨)
+npm run preview   # dist/ 로컬 확인
+```
+
+iframe 예: `<iframe src="https://<계정>.github.io/<저장소>/" style="width:100%;height:720px;border:0"></iframe>`
+(폰은 약 720px 고정 높이, iframe 안에서 스크롤 — 카드는 위에 붙어 따라옴)
+
+## 화면
+- 폰(≈360–420px): 카드가 폭에 꽉 차고 `sticky`로 위에 붙음 → 키보드가 올라와도 카드가 보임. 아래에 입력 세트.
+- PC(≥768px): 카드 왼쪽, 입력 오른쪽.
+- 입력이 바뀌면 카드가 잠깐 반짝(`.card-flash`, 동작 줄이기 설정이면 끔).
+- 월~일 칩: 입력 카드 머리의 요일 글자와 카드의 날짜(이번 주 그 요일)가 바뀜. 원본 카드에는 요일 글자가 없고 날짜만 있음.
+
+## 원본 파일 대응 (원본 시간표 저장소, dev 브랜치 — 원본은 손대지 않고 복사)
+
+| 여기 | 원본 |
+|---|---|
+| `src/card/TimeTableCell.tsx` | `src/app/(root)/_sample/_components/TimeTableCell.tsx` (이미지 context → 로컬 import) |
+| `src/card/AutoResizeText.tsx` | `src/components/AutoResizeTextCard/AutoResizeText.tsx` (+ 웹폰트 로드 뒤 다시 재기) |
+| `src/card/settings.ts` | `_sample/_settings/settings.ts`, `general.ts` (카드에 필요한 값만) |
+| `src/card/fonts.css` | `_sample/_styles/index.css` |
+| `src/card/imgs.ts`, `src/assets/*.webp` | `_sample/_img/imgs.ts`, `_img/main/{online1,online2,offline}_Y2Kred.png` → webp |
+| `src/card/CardStage.tsx` | (새로 씀) 800×617 원본 크기로 그리고 `transform: scale`로 줄임, 좌우 투명 여백 40px 잘라 냄 |
+| `src/inputs/DayInput.tsx` | `_sample/_components/SampleTimeTableInputList.tsx` 하루치만 (isMultiple, 하루 최대 2개 = `_uneditable/TimeTableEditor.tsx`) |
+| `src/inputs/{DayCard,EntryCard,SubToggle,Toggle,CardTitle,styles}` | `src/components/TimeTable/FixedComponents/*` 그대로 |
+| `src/inputs/{AdaptiveTimeRenderer,ScrollableTimePicker,TextRenderer,TextareaRenderer}` | `src/components/TimeTable/fieldRenderer/*` 그대로 |
+| `src/lib/format.ts` | `utils/date-formatter`(padZero), `utils/time-formatter`(formatTime), `utils/time-table/data`(weekdays) |
+| `src/lib/utils.ts`, `types.ts` | `lib/utils`(cn), `utils/utils`(SizeProps), `types/time-table/data` |
+| `src/index.css` `@theme` | `src/app/globals.css` `@theme` 의 timetable-* 색 |
+
+상태: 원본의 TimeTableContext / LegacyTemplateAssetsContext 대신 `App.tsx`의 `useState` 하나.
+
+## 글꼴
+카드 글꼴(학교안심 알림장, 베이글팻)과 입력 UI 글꼴(Pretendard)은 jsdelivr CDN에서 불러온다.

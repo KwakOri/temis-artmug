@@ -1,0 +1,58 @@
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css");
+@import "./card/fonts.css";
+@import "tailwindcss";
+
+/* 원본: src/app/globals.css @theme (시간표 입력 UI에 쓰는 색만) */
+@theme {
+  --color-primary: #fc712b;
+  --color-secondary: #fd9319;
+  --color-timetable-primary: #fd9319;
+  --color-timetable-primary-hover: #e58615;
+  --color-timetable-card-bg: #ece3e1;
+  --color-timetable-card-border: #e2d4c4;
+  --color-timetable-input-bg: #dcd0c6;
+  --color-timetable-input-hover: #e0d8d0;
+  --color-timetable-form-bg: #f5f0ed;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+body {
+  font-family: "Pretendard Variable", "Pretendard", sans-serif;
+  background-color: #f5f0ed;
+  -webkit-text-size-adjust: 100%;
+}
+
+button {
+  cursor: pointer;
+}
+
+/* 고치면 카드가 잠깐 반짝 */
+@keyframes card-flash {
+  0% {
+    filter: drop-shadow(0 0 0 rgba(253, 147, 25, 0));
+    transform: scale(1);
+  }
+  30% {
+    filter: drop-shadow(0 0 14px rgba(253, 147, 25, 0.85));
+    transform: scale(1.012);
+  }
+  100% {
+    filter: drop-shadow(0 0 0 rgba(253, 147, 25, 0));
+    transform: scale(1);
+  }
+}
+.card-flash {
+  animation: card-flash 450ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .card-flash {
+    animation: none;
+  }
+}
