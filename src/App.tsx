@@ -80,12 +80,13 @@ export default function App() {
           </button>
         </div>
 
+        {/* 체험존은 방송 1개만: 원본도 방송이 2개면 서브 타이틀을 그리지 않아서, 서브 타이틀이 늘 보이게 한다 */}
         <DayInput
           day={day}
           onChange={update}
           weekdayOption={weekdayOption}
           size="md"
-          isMultiple
+          isMultiple={false}
         />
       </section>
     </main>
