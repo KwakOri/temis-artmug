@@ -1,12 +1,11 @@
 import { useMemo, useRef, useState } from "react";
 import CardStage from "./card/CardStage";
 import { weekdayOption } from "./card/settings";
-import { weekdays } from "./lib/format";
 import type { TDefaultCard } from "./lib/types";
 import { cn } from "./lib/utils";
 import DayInput, { createInitialDay } from "./inputs/DayInput";
 
-const DEFAULT_DAY = 0; // 월
+const DEFAULT_DAY = 0; // 월 (요일 고르기는 뺐다 — 카드는 늘 월요일)
 
 /** 이번 주 월요일부터 7일 (원본도 월요일 기준으로 주를 잡음) */
 const getWeekDates = () => {
@@ -37,17 +36,12 @@ export default function DemoZone({ embedded = false }: { embedded?: boolean }) {
     flash();
   };
 
-  const selectWeekday = (d: number) => {
-    if (d === day.day) return;
-    update({ ...day, day: d });
-  };
-
   const reset = () => update(createInitialDay(DEFAULT_DAY));
 
   return (
     <div
       className={cn(
-        "mx-auto w-full max-w-[1100px] md:grid md:grid-cols-[minmax(0,1fr)_400px] md:gap-8 md:items-start",
+        "mx-auto w-full max-w-[1100px] md:grid md:grid-cols-[minmax(0,460px)_400px] md:justify-center md:gap-10 md:items-center",
         !embedded && "md:px-6 md:py-6"
       )}
     >
@@ -63,25 +57,7 @@ export default function DemoZone({ embedded = false }: { embedded?: boolean }) {
       </section>
 
       <section className="flex flex-col gap-3 px-3 pt-2 pb-8 md:px-0 md:pt-0">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex gap-1" role="group" aria-label="요일 고르기">
-            {weekdays.kr.map((label, i) => (
-              <button
-                key={label}
-                type="button"
-                aria-pressed={day.day === i}
-                onClick={() => selectWeekday(i)}
-                className={cn(
-                  "w-8 h-8 rounded-full text-sm font-semibold transition-colors",
-                  day.day === i
-                    ? "bg-timetable-primary text-white"
-                    : "bg-timetable-card-bg text-gray-600 hover:bg-timetable-input-hover"
-                )}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+        <div className="flex items-center justify-end">
           <button
             type="button"
             onClick={reset}
