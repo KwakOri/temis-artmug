@@ -9,19 +9,20 @@ interface Client {
   /** /<id>/edit 첫 저장 때 만든 파일 ID. 비어 있으면 페이지는 data.ts 기본값만 쓴다. */
   fileId: string;
 }
-const CLIENTS: Record<string, Client> = clients;
+export const CLIENTS: Record<string, Client> = clients;
 
-/** 주소 첫 칸이 손님 id. 목록에 없으면(맨 앞 주소 등) 주인 페이지(temis). */
-export const SLUG = (() => {
+/** 주소 첫 칸이 손님 id. 목록에 없으면(맨 앞 주소 등) null → 관리 사이트 안내 화면. */
+export const SLUG: string | null = (() => {
   const first = location.pathname.split("/").filter(Boolean)[0] ?? "";
-  return first in CLIENTS ? first : "temis";
+  return first in CLIENTS ? first : null;
 })();
+const CLIENT: Client = SLUG ? CLIENTS[SLUG] : { name: "", fileId: "" };
 
 export const REMOTE = {
   clientId: "76722884494-r8of5elhefhh1j0583rbr8i9dpo5ihai.apps.googleusercontent.com",
   apiKey: "AIzaSyB3GzQ2fz2c_s03WkvD5nNd_UL10YZLk3c",
-  name: CLIENTS[SLUG].name,
-  fileId: CLIENTS[SLUG].fileId,
+  name: CLIENT.name,
+  fileId: CLIENT.fileId,
   fileName: `artmug-page-${SLUG}.json`,
 };
 
