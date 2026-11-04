@@ -253,7 +253,8 @@ export default function Editor() {
     run("저장", async () => {
       const made = await save(doc);
       setSaved(JSON.stringify(doc));
-      if (made) return `저장했어요. 처음 만든 파일이에요. 파일 ID를 vps-claude에게 보내 주세요: ${made}`;
+      if (made) return `저장했어요. 처음 만든 파일이에요. 아래 파일 ID를 TEMIS에 보내 주세요. 등록하면 상세페이지에 반영돼요: ${made}`;
+      if (!REMOTE.fileId) return `저장했어요. 아직 등록 전이라 상세페이지에는 안 보여요. 파일 ID: ${fileId()}`;
       return `저장했어요 (${new Date().toLocaleTimeString("ko-KR")}). 상세페이지를 새로고침하면 바뀌어 있어요.`;
     });
 
@@ -267,7 +268,7 @@ export default function Editor() {
     <div className="min-h-screen text-ink">
       <header className="sticky top-0 z-10 flex flex-wrap items-center gap-2 border-b border-timetable-card-border bg-[#f5f0ed]/95 px-4 py-2 backdrop-blur">
         <b className="font-[BagelFat] text-primary">TEMIS</b>
-        <span className="text-sm font-bold">상세페이지 고치기</span>
+        <span className="text-sm font-bold">상세페이지 고치기 · {REMOTE.name}</span>
         <span className="flex-1" />
         <span className="text-[13px] text-ink/60">{dirty ? "● 저장 안 됨" : "저장됨"}</span>
         {!signedIn() && (

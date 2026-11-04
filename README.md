@@ -48,3 +48,10 @@ iframe 예: `<iframe src="https://<계정>.github.io/<저장소>/" style="width:
 
 ## 글꼴
 카드 글꼴(학교안심 알림장, 베이글팻)과 입력 UI 글꼴(Pretendard)은 jsdelivr CDN에서 불러온다.
+
+## 손님(판매자) 페이지
+
+- 손님마다 `https://artmug.temis.kr/<id>/`(상세페이지)와 `/<id>/edit`(편집기). 주인 페이지는 `temis`(맨 앞 주소도 temis).
+- 손님 추가: `src/clients.json`에 `"<id>": { "name": "<이름>", "fileId": "" }` 한 줄 → 빌드·배포. id는 영문 소문자·숫자·-.
+- 손님이 `/<id>/edit`에서 구글 로그인 → 저장하면 손님 드라이브에 `artmug-page-<id>.json`이 생기고 파일 ID가 뜬다. 그 ID를 `fileId`에 넣고 다시 배포해야 상세페이지에 반영된다.
+- 구글 클라우드 프로젝트: tokpi-artmug(OAuth 클라이언트·API 키, `src/page/remote.ts`).

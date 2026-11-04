@@ -1,19 +1,34 @@
 // /edit 저장본(주인 구글 드라이브의 JSON 한 개)을 읽어 data.ts 기본값 위에 덮는다.
 // 클라이언트 ID·API 키는 공개해도 되는 값이다(API 키는 artmug.temis.kr·kwakori.github.io + Drive API로 제한).
+// 손님(판매자)마다 artmug.temis.kr/<id>/ 와 /<id>/edit 을 쓴다. 손님 목록은 src/clients.json.
+import clients from "../clients.json";
 import { doc, type Doc } from "./data";
+
+interface Client {
+  name: string;
+  /** /<id>/edit 첫 저장 때 만든 파일 ID. 비어 있으면 페이지는 data.ts 기본값만 쓴다. */
+  fileId: string;
+}
+const CLIENTS: Record<string, Client> = clients;
+
+/** 주소 첫 칸이 손님 id. 목록에 없으면(맨 앞 주소 등) 주인 페이지(temis). */
+export const SLUG = (() => {
+  const first = location.pathname.split("/").filter(Boolean)[0] ?? "";
+  return first in CLIENTS ? first : "temis";
+})();
 
 export const REMOTE = {
   clientId: "76722884494-r8of5elhefhh1j0583rbr8i9dpo5ihai.apps.googleusercontent.com",
   apiKey: "AIzaSyB3GzQ2fz2c_s03WkvD5nNd_UL10YZLk3c",
-  /** /edit 첫 저장 때 만든 파일 ID. 비어 있으면 페이지는 data.ts 기본값만 쓴다. */
-  fileId: "",
-  fileName: "temis-artmug-page.json",
+  name: CLIENTS[SLUG].name,
+  fileId: CLIENTS[SLUG].fileId,
+  fileName: `artmug-page-${SLUG}.json`,
 };
 
 /** /edit이 고치는 중인 내용(미리보기 iframe이 읽음) */
-export const DRAFT_KEY = "temis-artmug-draft";
-/** 처음 저장해 만든 파일 ID(REMOTE.fileId를 채우기 전까지 이 브라우저에서 씀) */
-export const FILE_ID_KEY = "temis-artmug-file-id";
+export const DRAFT_KEY = `artmug-draft-${SLUG}`;
+/** 처음 저장해 만든 파일 ID(clients.json에 넣기 전까지 이 브라우저에서 씀) */
+export const FILE_ID_KEY = `artmug-file-id-${SLUG}`;
 
 export const DEFAULT_DOC: Doc = structuredClone(doc);
 

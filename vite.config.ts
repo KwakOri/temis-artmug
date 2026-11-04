@@ -3,11 +3,11 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
-// base './' : GitHub Pages 하위 폴더나 iframe 어디에 두어도 상대 경로로 동작
+// artmug.temis.kr 맨 앞에서 서비스한다. 손님 폴더(/<id>/)도 같은 /assets를 쓰도록 절대 경로.
 export default defineConfig({
-  base: "./",
+  base: "/",
   plugins: [react(), tailwindcss()],
-  // edit.html : 주인용 문구·가격 편집기(GitHub Pages에서 /edit 주소로 열림)
+  // edit.html : 문구·가격 편집기. 빌드 뒤 scripts/clients.mjs가 손님마다 /<id>/index.html·edit.html로 복사한다.
   build: {
     assetsInlineLimit: 0,
     rollupOptions: { input: { main: resolve(__dirname, "index.html"), edit: resolve(__dirname, "edit.html") } },
