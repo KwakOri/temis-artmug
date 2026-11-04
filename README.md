@@ -3,18 +3,25 @@
 https://artmug.temis.kr/ (예전 kwakori.github.io/temis-artmug/는 이리로 넘어옴, 편집기는 /edit) — 아트머그 본문 iframe에 넣는 상세페이지 전체.
 칸: 첫 화면 · 혜택 · 작업물 · 체험존 · 후기 · 가격 · 작업 자리(시트) · 진행 · 주의사항 · 신청 양식.
 
-- `src/page/data.ts`: 모든 문구·가격 기본값(나중에 /edit가 덮어씀). 작업물은 임시로 Temis 공개 포트폴리오(`public/works/`, webp).
+- `src/page/data.ts`: 모든 문구·가격의 모양과 기본값. 실제 내용은 `public/content.json`이 덮는다.
+- `public/content.json`, `public/works/`: 게시된 내용과 작업물 사진(`<src>-s.webp` 목록용, `-l.webp` 확대용). 편집기가 고친다.
+- `src/site.ts`: 이 페이지가 사는 깃허브 저장소(owner·repo·branch). 손님마다 복사한 뒤 이것만 바꾼다.
 - `src/page/pricing.ts`: 견적 계산(정액·%·별도 문의). 가격표·견적·복사 글이 같이 씀.
 - `src/page/Slots.tsx`: 구글 시트 CSV(tokpi와 같은 틀). `slots.csvUrl`이 비면 숨김, `?slots=demo`로 예시.
 - `src/DemoZone.tsx`: 시간표 체험존(요일 카드 1장 + 입력 세트). `?only=demo`로 체험존만 볼 수 있다.
-- 저장·다운로드·로그인·외부 링크 없음.
+
+## 편집기 (/edit)
+- 손님이 만든 깃허브 fine-grained 토큰(이 저장소만, Contents: Read and write)을 한 번 넣으면, 「저장」이 `public/content.json`과 새 사진을 커밋 하나로 올린다. 토큰은 그 브라우저 localStorage에만 있다.
+- 커밋되면 `.github/workflows/deploy.yml`이 빌드·배포하고, 편집기는 배포된 `content.json`의 `updatedAt`을 보고 「적용됐어요」를 알린다(보통 1~2분).
+- 사진은 브라우저에서 긴 변 720/1600으로 줄여 올리고, 빠진 사진 파일은 지운다(기본값이 쓰는 사진은 남김).
+- 저장소 Settings → Pages → Source는 「GitHub Actions」여야 한다.
 
 ## 실행 / 빌드
 
 ```bash
 npm install
 npm run dev       # 개발 서버
-npm run build     # dist/ 생성 (base './' — GitHub Pages 하위 폴더 어디든 그대로 올리면 됨)
+npm run build     # dist/ 생성 (base './' — 맨 앞이든 <계정>.github.io/<저장소>/ 아래든 그대로 뜸)
 npm run preview   # dist/ 로컬 확인
 ```
 
@@ -51,7 +58,5 @@ iframe 예: `<iframe src="https://<계정>.github.io/<저장소>/" style="width:
 
 ## 손님(판매자) 페이지
 
-- 손님마다 `https://artmug.temis.kr/<id>/`(상세페이지)와 `/<id>/edit`(편집기). 주인 페이지는 `temis`(맨 앞 주소도 temis).
-- 손님 추가: `src/clients.json`에 `"<id>": { "name": "<이름>", "fileId": "" }` 한 줄 → 빌드·배포. id는 영문 소문자·숫자·-.
-- 손님이 `/<id>/edit`에서 구글 로그인 → 저장하면 손님 드라이브에 `artmug-page-<id>.json`이 생기고 파일 ID가 뜬다. 그 ID를 `fileId`에 넣고 다시 배포해야 상세페이지에 반영된다.
-- 구글 클라우드 프로젝트: tokpi-artmug(OAuth 클라이언트·API 키, `src/page/remote.ts`).
+- 손님 한 명 = 손님 명의 깃허브 계정의 저장소 하나. 이 저장소를 복사해 `src/site.ts`를 바꾸고, Pages Source를 「GitHub Actions」로 켠다.
+- 주소: 상세페이지 `/`, 편집기 `/edit`. Temis는 artmug.temis.kr(`public/CNAME`), 손님은 `<계정>.github.io/<저장소>/`.

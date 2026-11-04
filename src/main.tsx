@@ -2,7 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App";
-import { SLUG, applyDoc, fetchPublished, readDraft } from "./page/remote";
+import { applyDoc, fetchPublished, readDraft } from "./page/remote";
 
 // ?draft : /edit 미리보기. 고치는 중인 내용(localStorage)을 보여 주고, 바뀌면 다시 그린다.
 const draft = /[?&]draft\b/.test(location.search);
@@ -22,8 +22,6 @@ if (draft) {
     applyDoc(readDraft());
     render();
   });
-} else if (!SLUG) {
-  render();
 } else {
   fetchPublished().then((saved) => {
     if (saved) applyDoc(saved);

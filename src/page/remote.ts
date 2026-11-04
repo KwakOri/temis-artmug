@@ -1,35 +1,11 @@
-// /edit 저장본(주인 구글 드라이브의 JSON 한 개)을 읽어 data.ts 기본값 위에 덮는다.
-// 클라이언트 ID·API 키는 공개해도 되는 값이다(API 키는 artmug.temis.kr·kwakori.github.io + Drive API로 제한).
-// 손님(판매자)마다 artmug.temis.kr/<id>/ 와 /<id>/edit 을 쓴다. 손님 목록은 src/clients.json.
-import clients from "../clients.json";
+// 게시된 내용(public/content.json)을 읽어 data.ts 기본값 위에 덮는다.
+// content.json은 /edit 편집기가 깃허브에 커밋하고, GitHub Actions가 배포한다.
 import { doc, type Doc } from "./data";
 
-interface Client {
-  name: string;
-  /** /<id>/edit 첫 저장 때 만든 파일 ID. 비어 있으면 페이지는 data.ts 기본값만 쓴다. */
-  fileId: string;
-}
-export const CLIENTS: Record<string, Client> = clients;
-
-/** 주소 첫 칸이 손님 id. 목록에 없으면(맨 앞 주소 등) null → 관리 사이트 안내 화면. */
-export const SLUG: string | null = (() => {
-  const first = location.pathname.split("/").filter(Boolean)[0] ?? "";
-  return first in CLIENTS ? first : null;
-})();
-const CLIENT: Client = SLUG ? CLIENTS[SLUG] : { name: "", fileId: "" };
-
-export const REMOTE = {
-  clientId: "76722884494-r8of5elhefhh1j0583rbr8i9dpo5ihai.apps.googleusercontent.com",
-  apiKey: "AIzaSyB3GzQ2fz2c_s03WkvD5nNd_UL10YZLk3c",
-  name: CLIENT.name,
-  fileId: CLIENT.fileId,
-  fileName: `artmug-page-${SLUG}.json`,
-};
-
 /** /edit이 고치는 중인 내용(미리보기 iframe이 읽음) */
-export const DRAFT_KEY = `artmug-draft-${SLUG}`;
-/** 처음 저장해 만든 파일 ID(clients.json에 넣기 전까지 이 브라우저에서 씀) */
-export const FILE_ID_KEY = `artmug-file-id-${SLUG}`;
+export const DRAFT_KEY = "artmug-draft";
+/** 아직 커밋 안 한 새 작업물 이미지(미리보기용 data URL). { [src]: { s, l } } */
+export const PENDING_KEY = "artmug-pending-images";
 
 export const DEFAULT_DOC: Doc = structuredClone(doc);
 
@@ -51,16 +27,12 @@ export function applyDoc(next: unknown) {
   Object.assign(doc, merge(DEFAULT_DOC, next));
 }
 
-export const fileId = () => REMOTE.fileId || localStorage.getItem(FILE_ID_KEY) || "";
-
-/** 게시된 저장본을 로그인 없이 읽는다(파일은 「링크가 있는 모든 사용자」 보기). */
-export async function fetchPublished(): Promise<unknown | null> {
-  const id = fileId();
-  if (!id || !REMOTE.apiKey) return null;
+/** 배포된 content.json. 페이지(HTML)는 깃허브가 10분 캐시하므로 매번 새로 받는다. */
+export async function fetchPublished(): Promise<(Record<string, unknown> & { updatedAt?: string }) | null> {
   const ctl = new AbortController();
-  const t = setTimeout(() => ctl.abort(), 3000);
+  const t = setTimeout(() => ctl.abort(), 4000);
   try {
-    const r = await fetch(`https://www.googleapis.com/drive/v3/files/${id}?alt=media&key=${REMOTE.apiKey}`, { cache: "no-store", signal: ctl.signal });
+    const r = await fetch(`${import.meta.env.BASE_URL}content.json?t=${Date.now()}`, { cache: "no-store", signal: ctl.signal });
     return r.ok ? await r.json() : null;
   } catch {
     return null;
@@ -75,4 +47,19 @@ export const readDraft = (): unknown | null => {
   } catch {
     return null;
   }
+};
+
+type Pending = Record<string, { s: string; l: string }>;
+let pendingCache: [string | null, Pending] = [null, {}];
+/** 미리보기에서 그림마다 부르므로, 저장된 글자가 같으면 다시 파싱하지 않는다. */
+export const readPending = (): Pending => {
+  const raw = localStorage.getItem(PENDING_KEY);
+  if (raw !== pendingCache[0]) {
+    try {
+      pendingCache = [raw, JSON.parse(raw ?? "{}") ?? {}];
+    } catch {
+      pendingCache = [raw, {}];
+    }
+  }
+  return pendingCache[1];
 };

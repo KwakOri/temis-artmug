@@ -5,11 +5,14 @@ import DemoZone from "../DemoZone";
 import Hero from "./Hero";
 import { cn } from "../lib/utils";
 import { doc, type FormField, type PlanId } from "./data";
+import { readPending } from "./remote";
 import { estimate, optionPriceLabel, won } from "./pricing";
 import Slots from "./Slots";
 
 const BASE = import.meta.env.BASE_URL;
-const workSrc = (src: string, size: "s" | "l") => `${BASE}works/${src}-${size}.webp`;
+// /edit 미리보기(?draft)에서는 아직 커밋 안 한 새 이미지를 data URL로 보여 준다.
+const DRAFT = /[?&]draft\b/.test(location.search);
+const workSrc = (src: string, size: "s" | "l") => (DRAFT && readPending()[src]?.[size]) || `${BASE}works/${src}-${size}.webp`;
 
 /** 줄바꿈(\n)과 *강조*를 그린다 */
 const rich = (text: string): ReactNode =>

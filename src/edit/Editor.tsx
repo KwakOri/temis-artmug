@@ -1,10 +1,13 @@
-// 주인용 편집기: data.ts 모양 그대로 칸을 그려 고치고, 구글 드라이브의 JSON 한 개로 저장한다.
+// 손님용 편집기: data.ts 모양 그대로 칸을 그려 고치고, 깃허브 저장소의 public/content.json(+작업물 사진)으로 저장한다.
+// 저장하면 GitHub Actions가 다시 배포해 1~2분 뒤 상세페이지에 적용된다.
 // 오른쪽 미리보기는 ./?draft(localStorage의 고치는 중인 내용)를 띄운다.
-import { ArrowDown, ArrowUp, ExternalLink, Plus, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ArrowDown, ArrowUp, ExternalLink, ImagePlus, Plus, Settings, Trash2 } from "lucide-react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import type { Doc } from "../page/data";
-import { DEFAULT_DOC, DRAFT_KEY, REMOTE, fetchPublished, fileId, merge, readDraft } from "../page/remote";
-import { loadSaved, save, signIn, signedIn } from "./google";
+import { DEFAULT_DOC, DRAFT_KEY, PENDING_KEY, fetchPublished, merge, readDraft } from "../page/remote";
+import { SITE } from "../site";
+import { WORKS_DIR, commit, connect, forgetToken, getToken, loadContent } from "./github";
+import { makeWork, toDataUrl } from "./image";
 
 type Path = (string | number)[];
 type Json = unknown;
@@ -63,9 +66,38 @@ const CHOICES: Record<string, [string, string][]> = {
 };
 
 /** 지금 페이지에 안 쓰이거나 코드가 쓰는 값이라 숨기는 칸 */
-const HIDDEN = new Set(["id", "src", "conflicts", "hero.title", "hero.sub", "hero.tags"]);
-/** 항목을 늘리거나 줄이면 안 되는 목록(구성 3개는 코드가 id로 찾고, 작업물 그림은 저장소에 있다) */
-const FIXED_LIST = new Set(["pricing.plans", "works.items"]);
+const HIDDEN = new Set(["id", "conflicts", "hero.title", "hero.sub", "hero.tags"]);
+/** 항목을 늘리거나 줄이면 안 되는 목록(구성 3개는 코드가 id로 찾는다) */
+const FIXED_LIST = new Set(["pricing.plans"]);
+
+/** 아직 저장 안 한 새 작업물 사진: src → 두 벌 + 썸네일 주소 */
+type Pending = Record<string, { s: Blob; l: Blob; url: string }>;
+const PhotoCtx = createContext<{ pending: Pending; pick: (path: Path, file: File) => void }>({ pending: {}, pick: () => {} });
+
+function Photo({ path, src }: { path: Path; src: string }) {
+  const { pending, pick } = useContext(PhotoCtx);
+  const ref = useRef<HTMLInputElement>(null);
+  const url = pending[src]?.url ?? (src ? `./works/${src}-s.webp` : "");
+  return (
+    <div className="flex items-center gap-3">
+      {url ? <img src={url} alt="" className="h-16 w-28 rounded-md bg-white object-cover" /> : <div className="grid h-16 w-28 place-items-center rounded-md bg-white text-[12px] text-red-500">사진 없음</div>}
+      <button type="button" onClick={() => ref.current?.click()} className="flex items-center gap-1 rounded-full border border-ink/20 bg-white px-3 py-1.5 text-[13px] font-bold">
+        <ImagePlus size={15} /> {src ? "사진 바꾸기" : "사진 고르기"}
+      </button>
+      <input
+        ref={ref}
+        type="file"
+        accept="image/*"
+        hidden
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) pick(path, f);
+          e.target.value = "";
+        }}
+      />
+    </div>
+  );
+}
 
 const key = (p: Path) => p.filter((x) => typeof x === "string").join(".");
 const isObj = (v: Json): v is Record<string, Json> => !!v && typeof v === "object" && !Array.isArray(v);
@@ -92,6 +124,7 @@ const input = "w-full rounded-lg border border-timetable-card-border bg-white px
 function Field({ name, path, value, onChange }: { name: string; path: Path; value: Json; onChange: (p: Path, v: Json) => void }) {
   const k = key(path);
   if (HIDDEN.has(name) || HIDDEN.has(k)) return null;
+  if (k === "works.items.src" && typeof value === "string") return <Photo path={path} src={value} />;
   const label = LABEL[name] ?? name;
 
   if (CHOICES[name] && typeof value === "string")
@@ -192,23 +225,32 @@ function Field({ name, path, value, onChange }: { name: string; path: Path; valu
 
 const SECTIONS = Object.keys(DEFAULT_DOC) as (keyof Doc)[];
 
+/** 저장할 때 지우지 않을 사진(기본값이 쓰는 것. 「기본값으로 되돌리기」가 다시 찾는다) */
+const KEEP = new Set(DEFAULT_DOC.works.items.map((w) => w.src));
+const srcs = (d: Doc) => new Set(d.works.items.map((w) => w.src));
+
 export default function Editor() {
   const [doc, setDoc] = useState<Doc | null>(null);
   const [saved, setSaved] = useState("");
   const [tab, setTab] = useState<keyof Doc>("hero");
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
-  const [, setTick] = useState(0);
+  const [pending, setPending] = useState<Pending>({});
+  const [setup, setSetup] = useState(false);
+  const [token, setToken] = useState("");
+  const savedDoc = (): Doc => JSON.parse(saved);
 
-  // 처음: 게시본(없으면 기본값)을 불러오고, 저장 안 한 고친 내용이 있으면 이어서 할지 묻는다.
+  // 처음: 저장소의 최신 content.json(없으면 배포본, 그것도 없으면 기본값)을 불러오고, 저장 안 한 고친 내용이 있으면 이어서 할지 묻는다.
+  // 고르던 사진은 브라우저를 닫으면 사라지므로, 이어서 고칠 때 사진 없는 항목은 「사진 없음」으로 보인다.
   useEffect(() => {
-    fetchPublished().then((pub) => {
+    localStorage.removeItem(PENDING_KEY);
+    (async () => (await loadContent()) ?? (await fetchPublished()))().then((pub) => {
       const base = merge(DEFAULT_DOC, pub);
       const draft = readDraft();
       const resume = draft && JSON.stringify(merge(DEFAULT_DOC, draft)) !== JSON.stringify(base) && confirm("저장하지 않은 고친 내용이 있어요. 이어서 고칠까요?");
       setSaved(JSON.stringify(base));
       setDoc(resume ? merge(DEFAULT_DOC, draft) : base);
-      if (!pub && fileId() && !REMOTE.apiKey) setMsg("로그인하면 저장본을 불러와요.");
+      if (!getToken()) setSetup(true);
     });
   }, []);
 
@@ -216,7 +258,7 @@ export default function Editor() {
     if (doc) localStorage.setItem(DRAFT_KEY, JSON.stringify(doc));
   }, [doc]);
 
-  const dirty = !!doc && JSON.stringify(doc) !== saved;
+  const dirty = !!doc && (JSON.stringify(doc) !== saved || Object.keys(pending).length > 0);
   useEffect(() => {
     const warn = (e: BeforeUnloadEvent) => {
       if (dirty) e.preventDefault();
@@ -234,29 +276,71 @@ export default function Editor() {
       setMsg(e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);
-      setTick((t) => t + 1);
     }
   };
 
-  const login = () =>
-    run("로그인", async () => {
-      await signIn();
-      const s = await loadSaved();
-      if (!s) return "로그인했어요. 아직 저장본이 없어요. 고친 뒤 「저장」을 누르면 드라이브에 파일이 만들어져요.";
-      const base = merge(DEFAULT_DOC, s);
-      setSaved(JSON.stringify(base));
-      if (!dirty || confirm("드라이브 저장본을 불러올까요? 지금 고친 내용은 사라져요.")) setDoc(base);
-      return "로그인했어요.";
+  const edit = (p: Path, v: Json) => setDoc((d) => setIn(d, p, v) as Doc);
+
+  // 사진 고르기: 줄여서 새 이름(src)으로 들고 있다가 저장 때 같이 올린다. 미리보기용 작은 사진은 localStorage에도 둔다.
+  const pick = (path: Path, file: File) =>
+    run("사진 줄이기", async () => {
+      const { s, l } = await makeWork(file);
+      const src = `w-${Date.now().toString(36)}`;
+      setPending((p) => ({ ...p, [src]: { s, l, url: URL.createObjectURL(s) } }));
+      try {
+        const prev = JSON.parse(localStorage.getItem(PENDING_KEY) ?? "{}");
+        // 확대(l)도 작은 사진으로 보여 준다. 미리보기용이라 브라우저 저장 공간을 아낀다.
+        const small = await toDataUrl(s);
+        localStorage.setItem(PENDING_KEY, JSON.stringify({ ...prev, [src]: { s: small, l: small } }));
+      } catch {
+        // 브라우저 저장 공간이 차면 미리보기에서만 사진이 안 보인다. 저장은 된다.
+      }
+      edit(path, src);
+      return `사진을 줄였어요(${Math.round(s.size / 1024)}KB · ${Math.round(l.size / 1024)}KB). 저장하면 올라가요.`;
     });
 
-  const doSave = () =>
-    run("저장", async () => {
-      const made = await save(doc);
-      setSaved(JSON.stringify(doc));
-      if (made) return `저장했어요. 처음 만든 파일이에요. 아래 파일 ID를 TEMIS에 보내 주세요. 등록하면 상세페이지에 반영돼요: ${made}`;
-      if (!REMOTE.fileId) return `저장했어요. 아직 등록 전이라 상세페이지에는 안 보여요. 파일 ID: ${fileId()}`;
-      return `저장했어요 (${new Date().toLocaleTimeString("ko-KR")}). 상세페이지를 새로고침하면 바뀌어 있어요.`;
+  const saveToken = () =>
+    run("깃허브 연결", async () => {
+      await connect(token.trim());
+      setToken("");
+      setSetup(false);
+      return "깃허브에 연결했어요. 이제 「저장」을 누르면 상세페이지에 반영돼요.";
     });
+
+  // 배포가 끝났는지 content.json의 updatedAt으로 확인한다(보통 1~2분).
+  const watch = (stamp: string) => {
+    const started = Date.now();
+    const tick = async () => {
+      const pub = await fetchPublished();
+      if (pub?.updatedAt === stamp) return setMsg(`상세페이지에 적용됐어요 (${new Date().toLocaleTimeString("ko-KR")}). 아트머그에 넣은 페이지도 새로고침하면 바뀌어 있어요.`);
+      if (Date.now() - started > 6 * 60_000) return setMsg("저장은 됐는데 6분이 지나도 적용이 안 보여요. 깃허브 저장소의 Actions 탭에서 배포가 실패했는지 확인해 주세요.");
+      setTimeout(tick, 10_000);
+    };
+    setTimeout(tick, 20_000);
+  };
+
+  const doSave = () => {
+    if (!getToken()) return setSetup(true);
+    if (doc!.works.items.some((w) => !w.src)) return setMsg("사진이 없는 작업물이 있어요. 사진을 고르거나 그 항목을 빼 주세요.");
+    run("저장", async () => {
+      const now = srcs(doc!);
+      const files: Record<string, Blob> = {};
+      for (const [src, p] of Object.entries(pending))
+        if (now.has(src)) {
+          files[`${WORKS_DIR}/${src}-s.webp`] = p.s;
+          files[`${WORKS_DIR}/${src}-l.webp`] = p.l;
+        }
+      const gone = [...srcs(savedDoc())].filter((src) => !now.has(src) && !KEEP.has(src)).flatMap((src) => [`${WORKS_DIR}/${src}-s.webp`, `${WORKS_DIR}/${src}-l.webp`]);
+      const changed = SECTIONS.filter((k) => JSON.stringify(doc![k]) !== JSON.stringify(savedDoc()[k])).map((k) => LABEL[k] ?? k);
+      const updatedAt = new Date().toISOString();
+      await commit({ ...doc, updatedAt }, files, gone, `편집기 저장: ${changed.join(", ") || "사진"}`);
+      setSaved(JSON.stringify(doc));
+      setPending({});
+      localStorage.removeItem(PENDING_KEY);
+      watch(updatedAt);
+      return "저장했어요. 1~2분 뒤 상세페이지에 적용돼요. 적용되면 여기서 알려 드릴게요.";
+    });
+  };
 
   const reset = () => {
     if (confirm("이 칸들을 처음 기본값으로 되돌릴까요? 저장해야 반영돼요.")) setDoc({ ...doc!, [tab]: structuredClone(DEFAULT_DOC[tab]) });
@@ -268,14 +352,12 @@ export default function Editor() {
     <div className="min-h-screen text-ink">
       <header className="sticky top-0 z-10 flex flex-wrap items-center gap-2 border-b border-timetable-card-border bg-[#f5f0ed]/95 px-4 py-2 backdrop-blur">
         <b className="font-[BagelFat] text-primary">TEMIS</b>
-        <span className="text-sm font-bold">상세페이지 고치기 · {REMOTE.name}</span>
+        <span className="text-sm font-bold">상세페이지 고치기 · {doc.brand}</span>
         <span className="flex-1" />
         <span className="text-[13px] text-ink/60">{dirty ? "● 저장 안 됨" : "저장됨"}</span>
-        {!signedIn() && (
-          <button type="button" disabled={busy} onClick={login} className="h-9 rounded-full border border-ink/20 bg-white px-4 text-sm font-bold">
-            구글 로그인
-          </button>
-        )}
+        <button type="button" title="깃허브 연결" onClick={() => setSetup((v) => !v)} className="grid size-9 place-items-center rounded-full border border-ink/20 bg-white">
+          <Settings size={16} />
+        </button>
         <button type="button" disabled={busy || !dirty} onClick={doSave} className="h-9 rounded-full bg-primary px-5 text-sm font-bold text-white disabled:opacity-40">
           저장
         </button>
@@ -283,6 +365,47 @@ export default function Editor() {
           상세페이지 <ExternalLink size={14} />
         </a>
         {msg && <p className="w-full select-all text-[13px] text-ink/80">{msg}</p>}
+        {setup && (
+          <div className="w-full space-y-2 rounded-xl bg-white p-4 text-[13px] leading-relaxed">
+            <b className="text-sm">깃허브 연결 {getToken() ? "(연결됨)" : ""}</b>
+            <p>저장하려면 깃허브 토큰이 한 번 필요해요. 토큰은 이 브라우저에만 저장되고 깃허브 말고는 아무 데도 보내지 않아요.</p>
+            <ol className="list-decimal space-y-0.5 pl-5">
+              <li>
+                깃허브에 로그인한 뒤{" "}
+                <a className="text-primary underline" href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noreferrer">
+                  새 토큰 만들기
+                </a>
+                를 열어요.
+              </li>
+              <li>Expiration: 원하는 기한(지나면 여기서 다시 넣으면 돼요)</li>
+              <li>
+                Repository access: <b>Only select repositories</b> → <code>{SITE.repo}</code>
+              </li>
+              <li>
+                Permissions → Repository permissions → <b>Contents: Read and write</b>
+              </li>
+              <li>만든 토큰(github_pat_…)을 아래에 붙여 넣어요.</li>
+            </ol>
+            <div className="flex flex-wrap gap-2">
+              <input type="password" autoComplete="off" placeholder="github_pat_…" value={token} onChange={(e) => setToken(e.target.value)} className={`${input} max-w-sm flex-1`} />
+              <button type="button" disabled={busy || !token.trim()} onClick={saveToken} className="h-9 rounded-full bg-ink px-4 text-sm font-bold text-white disabled:opacity-40">
+                확인하고 연결
+              </button>
+              {getToken() && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    forgetToken();
+                    setMsg("이 브라우저에서 토큰을 지웠어요.");
+                  }}
+                  className="h-9 px-2 text-sm text-red-500"
+                >
+                  토큰 지우기
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </header>
 
       <div className="lg:grid lg:grid-cols-[minmax(380px,520px)_1fr]">
@@ -294,13 +417,15 @@ export default function Editor() {
               </button>
             ))}
           </nav>
-          {tab === "hero" && <Field name="brand" path={["brand"]} value={doc.brand} onChange={(p, v) => setDoc((d) => setIn(d, p, v) as Doc)} />}
-          <Field name={tab} path={[tab]} value={doc[tab]} onChange={(p, v) => setDoc((d) => setIn(d, p, v) as Doc)} />
+          <PhotoCtx.Provider value={{ pending, pick }}>
+            {tab === "hero" && <Field name="brand" path={["brand"]} value={doc.brand} onChange={edit} />}
+            <Field name={tab} path={[tab]} value={doc[tab]} onChange={edit} />
+          </PhotoCtx.Provider>
           <button type="button" onClick={reset} className="text-[12px] text-ink/50 underline">
             이 탭을 기본값으로 되돌리기
           </button>
           <p className="text-[12px] leading-relaxed text-ink/50">
-            줄바꿈은 그대로 보여요. 진행 순서의 {"{횟수}"}는 수정 횟수로 바뀌어요. 작업물 사진·첫 화면 디자인은 여기서 못 고쳐요.
+            줄바꿈은 그대로 보여요. 진행 순서의 {"{횟수}"}는 수정 횟수로 바뀌어요. 작업물 사진은 「사진 고르기」로 바꿔요(저장 때 같이 올라가요). 첫 화면 디자인은 여기서 못 고쳐요.
           </p>
         </main>
         <aside className="hidden lg:block sticky top-[52px] h-[calc(100vh-52px)] border-l border-timetable-card-border">
