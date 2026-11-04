@@ -1,5 +1,5 @@
 // /edit 저장본(주인 구글 드라이브의 JSON 한 개)을 읽어 data.ts 기본값 위에 덮는다.
-// 클라이언트 ID·API 키는 공개해도 되는 값이다(API 키는 kwakori.github.io + Drive API로 제한).
+// 클라이언트 ID·API 키는 공개해도 되는 값이다(API 키는 artmug.temis.kr·kwakori.github.io + Drive API로 제한).
 import { doc, type Doc } from "./data";
 
 export const REMOTE = {

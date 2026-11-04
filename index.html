@@ -2,6 +2,8 @@
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
+    <!-- http로 들어오면 https로: 구글 로그인·API 키는 https 주소만 허용 -->
+    <script>if (location.protocol === "http:" && location.hostname !== "localhost") location.replace("https:" + location.href.slice(5));</script>
     <link rel="icon" href="data:," />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>맞춤 주간 시간표 주문제작</title>

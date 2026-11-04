@@ -1,6 +1,6 @@
 # Temis 맞춤 시간표 — 아트머그 상세페이지
 
-https://kwakori.github.io/temis-artmug/ — 아트머그 본문 iframe에 넣는 상세페이지 전체.
+https://artmug.temis.kr/ (예전 kwakori.github.io/temis-artmug/는 이리로 넘어옴, 편집기는 /edit) — 아트머그 본문 iframe에 넣는 상세페이지 전체.
 칸: 첫 화면 · 혜택 · 작업물 · 체험존 · 후기 · 가격 · 작업 자리(시트) · 진행 · 주의사항 · 신청 양식.
 
 - `src/page/data.ts`: 모든 문구·가격 기본값(나중에 /edit가 덮어씀). 작업물은 임시로 Temis 공개 포트폴리오(`public/works/`, webp).
