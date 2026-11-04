@@ -2,6 +2,7 @@
 import { Check, ChevronDown, Copy, Heart, Pencil, RotateCcw, Smartphone, Users, X, ZoomIn } from "lucide-react";
 import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
 import DemoZone from "../DemoZone";
+import Hero from "./Hero";
 import { cn } from "../lib/utils";
 import { doc, type FormField, type PlanId } from "./data";
 import { estimate, optionPriceLabel, won } from "./pricing";
@@ -158,42 +159,16 @@ export default function Page() {
       {/* 1. 첫 화면 */}
       <header className="relative overflow-hidden">
         <div className="bg-ink text-white text-center text-[13px] md:text-sm font-semibold py-2">{doc.hero.strip}</div>
-        <div className="mx-auto max-w-[1180px] px-4 md:px-6 pt-10 pb-12 md:pt-16 md:pb-16 grid md:grid-cols-[1fr_1.1fr] gap-8 md:gap-10 items-center">
-          <div className="text-center md:text-left">
-            <span className="inline-block rounded-full bg-white border border-timetable-card-border px-3 py-1 text-[13px] font-semibold text-primary">
-              버튜버 맞춤 주간 시간표
-            </span>
-            <h1 className="mt-4 text-[30px] leading-[1.25] md:text-[44px] font-extrabold tracking-tight">{rich(doc.hero.title)}</h1>
-            <p className="mt-4 text-[15px] md:text-base text-ink/75 leading-relaxed">{rich(doc.hero.sub)}</p>
-            <ul className="mt-5 flex flex-wrap gap-2 justify-center md:justify-start">
-              {doc.hero.tags.map((t) => (
-                <li key={t} className="rounded-full bg-timetable-card-bg px-3 py-1 text-[13px] font-semibold text-ink/80">
-                  #{t}
-                </li>
-              ))}
-            </ul>
-            <div className="mt-6 flex gap-2 justify-center md:justify-start">
-              <button type="button" onClick={() => go("price")} className="h-11 px-5 rounded-full bg-primary text-white font-bold">
-                가격 보기
-              </button>
-              <button type="button" onClick={() => go("form")} className="h-11 px-5 rounded-full bg-white border-2 border-timetable-card-border font-bold">
-                신청 양식
-              </button>
-            </div>
+        <Hero>
+          <div className="relative pt-5 md:pt-6 pb-10 md:pb-14 flex gap-2 justify-center">
+            <button type="button" onClick={() => go("price")} className="h-11 px-5 rounded-full bg-primary text-white font-bold">
+              가격 보기
+            </button>
+            <button type="button" onClick={() => go("form")} className="h-11 px-5 rounded-full bg-white border-2 border-timetable-card-border font-bold">
+              신청 양식
+            </button>
           </div>
-          <div className="relative">
-            <img
-              src={workSrc(doc.works.items[0].src, "l")}
-              alt={`완성 시간표 예시 — ${doc.works.items[0].title}`}
-              className="w-full rounded-2xl shadow-[0_18px_40px_-18px_rgba(59,42,36,0.45)] rotate-[1.5deg]"
-              width={1600}
-              height={900}
-            />
-            <span className="absolute -bottom-3 left-3 md:-left-4 rounded-full bg-white px-3 py-1.5 text-[13px] font-bold shadow">
-              ✏️ 칸만 채우면 매주 새 시간표
-            </span>
-          </div>
-        </div>
+        </Hero>
       </header>
 
       {/* 2. 혜택 */}
