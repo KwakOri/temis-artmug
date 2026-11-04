@@ -91,8 +91,9 @@ const SampleTimeTable = () => {
 
 export default function Hero({ children }: { children?: React.ReactNode }) {
   return (
+    // isolate: 달력(z-50)이 위쪽 고정 메뉴 위로 올라오지 않게 첫 화면 안에서만 쌓는다
     <div
-      className="overflow-hidden"
+      className="isolate overflow-hidden"
       style={{ backgroundImage: `url("${landingBg}")`, backgroundSize: "cover", backgroundPosition: "center" }}
     >
       <div className="flex flex-col items-center gap-3 md:gap-6 px-4 pt-8 pb-6 md:pt-12 md:pb-10 text-center">
