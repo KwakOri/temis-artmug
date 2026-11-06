@@ -17,7 +17,7 @@ const LABEL: Record<string, string> = {
   brand: "브랜드 이름",
   hero: "첫 화면",
   strip: "맨 위 검은 띠 문구",
-  stat: "실적 숫자 (첫 화면·작업물 머리)",
+  stat: "실적 숫자 · 함께한 스트리머 (첫 화면·작업물 머리)",
   num: "숫자",
   text: "숫자 옆 문구",
   benefits: "이런 점이 좋아요",
