@@ -1,6 +1,6 @@
 // Temis 아트머그 상세페이지. 칸 순서·문구는 PLANS/TEMIS_ARTMUG_PAGE.md 4절, 값은 data.ts.
-import { Check, ChevronDown, Copy, Heart, Pencil, RotateCcw, Smartphone, Users, X, ZoomIn } from "lucide-react";
-import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
+import { Check, ChevronDown, ChevronLeft, ChevronRight, Copy, Heart, Pencil, RotateCcw, Smartphone, Users, X, ZoomIn } from "lucide-react";
+import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import DemoZone from "../DemoZone";
 import Hero from "./Hero";
 import { cn } from "../lib/utils";
@@ -39,6 +39,14 @@ const NAV = [
   { id: "notice", label: "주의사항" },
 ];
 
+/** 임시: 작업물이 적어서 캐러셀을 이 칸 수가 될 때까지 같은 목록으로 반복해 보여 준다(데이터는 그대로).
+ *  작업물을 충분히 넣으면 0으로 바꾼다. */
+const FILL_TO = 24;
+const fill = <T,>(items: T[]) => {
+  if (!items.length || items.length >= FILL_TO) return items;
+  return Array.from({ length: Math.ceil(FILL_TO / items.length) }, () => items).flat();
+};
+
 const go = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
 
 const CAT_LABEL: Record<PlanId, string> = { structured: "정형", unstructured: "비정형", team: "팀" };
@@ -49,7 +57,7 @@ function SectionHead({ kicker, title, sub }: { kicker: string; title: string; su
     <div className="mb-6 md:mb-8 text-center">
       <span className="font-[BagelFat] text-primary text-sm tracking-wider">{kicker}</span>
       <h2 className="mt-1 text-2xl md:text-3xl font-extrabold text-ink">{rich(title)}</h2>
-      {sub && <p className="mt-2 text-[15px] text-ink/70 leading-relaxed">{rich(sub)}</p>}
+      {sub && <p className="mt-2 text-[15px] text-ink/70 leading-relaxed text-balance">{rich(sub)}</p>}
     </div>
   );
 }
@@ -58,7 +66,6 @@ export default function Page() {
   const { pricing } = doc;
   const [planId, setPlanId] = useState<PlanId>("unstructured");
   const [picked, setPicked] = useState<Set<string>>(new Set());
-  const [tab, setTab] = useState<PlanId | "all">("all");
   const [zoom, setZoom] = useState<number | null>(null);
   const [form, setForm] = useState<Record<string, string>>({});
   const [toast, setToast] = useState("");
@@ -66,7 +73,16 @@ export default function Page() {
   const est = useMemo(() => estimate(pricing.plans, pricing.options, planId, picked), [pricing, planId, picked]);
   const omakase = picked.has("omakase");
   const revisions = omakase ? pricing.omakaseRevisions : pricing.revisions;
-  const works = doc.works.items.filter((w) => tab === "all" || w.cat === tab);
+  const works = fill(doc.works.items);
+  const track = useRef<HTMLDivElement>(null);
+  const touchX = useRef<number | null>(null);
+  const zoomBy = (d: number) => setZoom((z) => (z === null ? z : (z + d + works.length) % works.length));
+  /** 캐러셀을 카드 한 장(+간격)만큼 넘긴다 */
+  const slide = (d: number) => {
+    const el = track.current;
+    const card = el?.firstElementChild as HTMLElement | null;
+    if (el && card) el.scrollBy({ left: d * (card.offsetWidth + 20), behavior: "smooth" });
+  };
 
   useEffect(() => {
     if (!toast) return;
@@ -76,7 +92,11 @@ export default function Page() {
 
   useEffect(() => {
     if (zoom === null) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setZoom(null);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setZoom(null);
+      else if (e.key === "ArrowLeft") zoomBy(-1);
+      else if (e.key === "ArrowRight") zoomBy(1);
+    };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [zoom]);
@@ -162,7 +182,7 @@ export default function Page() {
       {/* 1. 첫 화면 */}
       <header className="relative overflow-hidden">
         <div className="bg-ink text-white text-center text-[13px] md:text-sm font-semibold py-2">{doc.hero.strip}</div>
-        <Hero>
+        <Hero stat={doc.hero.stat}>
           <div className="relative pt-5 md:pt-6 pb-10 md:pb-14 flex gap-2 justify-center">
             <button type="button" onClick={() => go("price")} className="h-11 px-5 rounded-full bg-primary text-white font-bold">
               가격 보기
@@ -196,31 +216,28 @@ export default function Page() {
       </section>
 
       {/* 3. 작업물 */}
-      <section id="works" className="scroll-mt-[52px] md:scroll-mt-[60px] py-12 md:py-16 px-4">
-        <div className="mx-auto max-w-[1180px]">
-          <SectionHead kicker="WORKS" title="이렇게 만들어 드렸어요" sub="누르면 크게 볼 수 있어요." />
-          <div className="flex justify-center gap-1.5 mb-5" role="tablist">
-            {(["all", "structured", "unstructured", "team"] as const).map((t) => (
+      <section id="works" className="scroll-mt-[52px] md:scroll-mt-[60px] py-12 md:py-16">
+        <div className="mx-auto max-w-[1180px] px-4">
+          <SectionHead kicker="WORKS" title={doc.works.title.replace("{숫자}", doc.hero.stat.num)} sub={doc.works.sub} />
+        </div>
+        {/* 톡피 상세페이지 갤러리처럼: 가로로 넘기고(폰은 손가락), 카드는 번갈아 살짝 기울인다 */}
+        <div className="relative mx-auto max-w-[1280px]">
+          <div
+            ref={track}
+            className="flex gap-5 overflow-x-auto snap-x snap-mandatory scrollbar-hide px-[max(1rem,calc(50%-150px))] md:px-10 pt-3 pb-6"
+          >
+            {works.map((w, i) => (
               <button
-                key={t}
+                key={`${w.src}-${i}`}
                 type="button"
-                role="tab"
-                aria-selected={tab === t}
-                onClick={() => setTab(t)}
+                onClick={() => setZoom(i)}
                 className={cn(
-                  "h-9 px-4 rounded-full text-sm font-bold transition-colors",
-                  tab === t ? "bg-ink text-white" : "bg-white text-ink/70 border border-timetable-card-border"
+                  "group shrink-0 snap-center w-[300px] md:w-[400px] text-left rounded-2xl bg-white p-2 border-2 border-ink shadow-[5px_5px_0_var(--color-ink)] transition-transform hover:rotate-0",
+                  i % 2 ? "rotate-[1.2deg]" : "-rotate-[1.2deg]"
                 )}
               >
-                {t === "all" ? "전체" : CAT_LABEL[t]}
-              </button>
-            ))}
-          </div>
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 md:gap-4">
-            {works.map((w, i) => (
-              <button key={w.src} type="button" onClick={() => setZoom(i)} className="group text-left rounded-2xl bg-white p-2 shadow-sm hover:shadow-md transition-shadow">
                 <span className="relative block overflow-hidden rounded-xl aspect-video bg-timetable-card-bg">
-                  <img src={workSrc(w.src, "s")} alt={w.title} loading="lazy" className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform" />
+                  <img src={workSrc(w.src, "s")} alt={w.title} loading="lazy" draggable={false} className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform" />
                   <ZoomIn size={18} className="absolute right-2 top-2 text-white drop-shadow" />
                 </span>
                 <span className="flex items-center gap-2 px-1.5 pt-2 pb-1">
@@ -230,7 +247,22 @@ export default function Page() {
               </button>
             ))}
           </div>
+          {([-1, 1] as const).map((d) => (
+            <button
+              key={d}
+              type="button"
+              aria-label={d < 0 ? "이전 작업물" : "다음 작업물"}
+              onClick={() => slide(d)}
+              className={cn(
+                "hidden md:grid absolute top-[calc(50%-12px)] -translate-y-1/2 place-items-center w-11 h-11 rounded-full bg-white border-2 border-ink shadow-[3px_3px_0_var(--color-ink)] text-ink hover:text-primary",
+                d < 0 ? "left-2" : "right-2"
+              )}
+            >
+              {d < 0 ? <ChevronLeft size={22} strokeWidth={2.6} /> : <ChevronRight size={22} strokeWidth={2.6} />}
+            </button>
+          ))}
         </div>
+        <p className="mt-1 text-center text-[13px] text-ink/50 md:hidden">← 옆으로 넘겨 보세요 →</p>
       </section>
 
       {/* 체험 */}
@@ -460,7 +492,32 @@ export default function Page() {
           <button type="button" aria-label="닫기" className="absolute right-3 top-3 grid place-items-center w-10 h-10 rounded-full bg-white/15 text-white">
             <X size={22} />
           </button>
-          <img src={workSrc(zoomed.src, "l")} alt={zoomed.title} className="max-w-full max-h-[75vh] rounded-xl" onClick={(e) => e.stopPropagation()} />
+          <img
+            src={workSrc(zoomed.src, "l")}
+            alt={zoomed.title}
+            className="max-w-full max-h-[75vh] rounded-xl"
+            onClick={(e) => e.stopPropagation()}
+            onTouchStart={(e) => (touchX.current = e.touches[0].clientX)}
+            onTouchEnd={(e) => {
+              const dx = touchX.current === null ? 0 : e.changedTouches[0].clientX - touchX.current;
+              touchX.current = null;
+              if (Math.abs(dx) > 40) zoomBy(dx < 0 ? 1 : -1);
+            }}
+          />
+          {([-1, 1] as const).map((d) => (
+            <button
+              key={d}
+              type="button"
+              aria-label={d < 0 ? "이전 작업물" : "다음 작업물"}
+              onClick={(e) => {
+                e.stopPropagation();
+                zoomBy(d);
+              }}
+              className={cn("absolute top-1/2 -translate-y-1/2 grid place-items-center w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/15 text-white hover:bg-white/30", d < 0 ? "left-2 md:left-6" : "right-2 md:right-6")}
+            >
+              {d < 0 ? <ChevronLeft size={26} /> : <ChevronRight size={26} />}
+            </button>
+          ))}
           <div className="mt-3 flex items-center gap-3 text-white" onClick={(e) => e.stopPropagation()}>
             <span className="font-semibold">{zoomed.title}</span>
             <button type="button" onClick={() => pickWork(zoomed.cat)} className="h-9 px-4 rounded-full bg-primary font-bold text-sm">
