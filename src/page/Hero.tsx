@@ -89,28 +89,7 @@ const SampleTimeTable = () => {
   );
 };
 
-export interface Stat {
-  num: string;
-  text: string;
-  sub: string;
-}
-
-/** 누적 실적: 큰 숫자 + 문구. 아트머그에는 새로 왔지만 작업은 많이 해 왔다는 것을 먼저 보여 준다. */
-const StatBadge = ({ stat }: { stat: Stat }) => (
-  <div className="flex flex-col items-center gap-1.5 md:gap-2">
-    <div className="flex items-center gap-2.5 md:gap-4 rounded-full bg-white/90 border-2 border-[#1B1612] shadow-[4px_4px_0_#1B1612] pl-4 pr-5 md:pl-6 md:pr-8 py-1.5 md:py-2">
-      <span className="font-[BagelFat] text-[34px] md:text-[56px] leading-none" style={{ color: "#F56015" }}>
-        {stat.num}
-      </span>
-      <span className="font-extrabold text-[15px] md:text-2xl text-left leading-tight" style={{ color: "#1B1612" }}>
-        {stat.text}
-      </span>
-    </div>
-    {stat.sub && <p className="text-[13px] md:text-base font-semibold text-[#1B1612]/70 max-w-[34em] text-balance">{stat.sub}</p>}
-  </div>
-);
-
-export default function Hero({ stat, children }: { stat?: Stat; children?: React.ReactNode }) {
+export default function Hero({ children }: { children?: React.ReactNode }) {
   return (
     // isolate: 달력(z-50)이 위쪽 고정 메뉴 위로 올라오지 않게 첫 화면 안에서만 쌓는다
     <div
@@ -126,7 +105,6 @@ export default function Hero({ stat, children }: { stat?: Stat; children?: React
           <br />
           디자인 플랫폼
         </h1>
-        {stat?.num && <StatBadge stat={stat} />}
       </div>
 
       {/* 주황 틀: 원본은 시간표(1100) 둘레로 52px씩, 모서리 72px, 아래로 갈수록 투명 */}

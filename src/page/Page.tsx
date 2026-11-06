@@ -21,7 +21,7 @@ const rich = (text: string): ReactNode =>
       {i > 0 && <br />}
       {line.split(/(\*[^*]+\*)/).map((part, j) =>
         /^\*[^*]+\*$/.test(part) ? (
-          <span key={j} className="text-primary">
+          <span key={j} className="text-primary whitespace-nowrap">
             {part.slice(1, -1)}
           </span>
         ) : (
@@ -182,7 +182,7 @@ export default function Page() {
       {/* 1. 첫 화면 */}
       <header className="relative overflow-hidden">
         <div className="bg-ink text-white text-center text-[13px] md:text-sm font-semibold py-2">{doc.hero.strip}</div>
-        <Hero stat={doc.hero.stat}>
+        <Hero>
           <div className="relative pt-5 md:pt-6 pb-10 md:pb-14 flex gap-2 justify-center">
             <button type="button" onClick={() => go("price")} className="h-11 px-5 rounded-full bg-primary text-white font-bold">
               가격 보기
@@ -218,7 +218,7 @@ export default function Page() {
       {/* 3. 작업물 */}
       <section id="works" className="scroll-mt-[52px] md:scroll-mt-[60px] py-12 md:py-16">
         <div className="mx-auto max-w-[1180px] px-4">
-          <SectionHead kicker="WORKS" title={doc.works.title.replace("{숫자}", doc.hero.stat.num)} sub={doc.works.sub} />
+          <SectionHead kicker="WORKS" title={doc.works.title.replace("{숫자}", doc.works.count)} sub={doc.works.sub} />
         </div>
         {/* 톡피 상세페이지 갤러리처럼: 가로로 넘기고(폰은 손가락), 카드는 번갈아 살짝 기울인다 */}
         <div className="relative mx-auto max-w-[1280px]">

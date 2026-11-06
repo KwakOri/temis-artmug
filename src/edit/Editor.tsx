@@ -17,9 +17,7 @@ const LABEL: Record<string, string> = {
   brand: "브랜드 이름",
   hero: "첫 화면",
   strip: "맨 위 검은 띠 문구",
-  stat: "실적 숫자 · 함께한 스트리머 (첫 화면·작업물 머리)",
-  num: "숫자",
-  text: "숫자 옆 문구",
+  count: "함께한 스트리머 수 (제목의 {숫자})",
   benefits: "이런 점이 좋아요",
   icon: "아이콘",
   title: "제목",
@@ -428,7 +426,7 @@ export default function Editor() {
             이 탭을 기본값으로 되돌리기
           </button>
           <p className="text-[12px] leading-relaxed text-ink/50">
-            줄바꿈은 그대로 보여요. 진행 순서의 {"{횟수}"}는 수정 횟수로, 작업물 제목의 {"{숫자}"}는 실적 숫자로 바뀌어요. 작업물 사진은 「사진 고르기」로 바꿔요(저장 때 같이 올라가요). 첫 화면 디자인은 여기서 못 고쳐요.
+            줄바꿈은 그대로 보여요. 진행 순서의 {"{횟수}"}는 수정 횟수로, 작업물 제목의 {"{숫자}"}는 「함께한 스트리머 수」로 바뀌어요. 작업물 사진은 「사진 고르기」로 바꿔요(저장 때 같이 올라가요). 첫 화면 디자인은 여기서 못 고쳐요.
           </p>
         </main>
         <aside className="hidden lg:block sticky top-[52px] h-[calc(100vh-52px)] border-l border-timetable-card-border">
