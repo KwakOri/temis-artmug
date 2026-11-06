@@ -160,8 +160,6 @@ export const doc = {
   ],
   form: {
     fields: [
-      { id: "name", label: "활동명", type: "text", required: true, placeholder: "예) 테미스" },
-      { id: "channel", label: "방송 채널 주소 (채널 확인용)", type: "text", placeholder: "치지직·SOOP·유튜브 채널 주소" },
       { id: "content", label: "시간표에 들어갈 내용", type: "longtext", required: true, placeholder: "방송 요일, 하루 방송 횟수, 메모 칸이 필요한지 적어 주세요." },
       { id: "imagePos", label: "캐릭터 이미지 위치", type: "text", showIf: "omakaseOff", placeholder: "예) 왼쪽에 크게" },
       { id: "cellShape", label: "요일 칸 모양", type: "text", showIf: "omakaseOff", placeholder: "예) 둥근 카드, 말풍선" },
@@ -171,7 +169,7 @@ export const doc = {
       { id: "members", label: "팀원 수", type: "number", showIf: "team", placeholder: "예) 4" },
       { id: "firstUse", label: "첫 사용 희망일", type: "date" },
     ] as FormField[],
-    attachNote: "캐릭터·참고 이미지는 아트머그 문의 창에 첨부해 주세요.",
+    attachNote: "캐릭터·참고 이미지는 아트머그 문의 창에 첨부해 주세요. 연락처는 결제 후 아트머그에서 자동으로 공개돼요.",
   },
 };
 

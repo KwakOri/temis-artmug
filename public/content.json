@@ -306,19 +306,6 @@
   "form": {
     "fields": [
       {
-        "id": "name",
-        "label": "활동명",
-        "type": "text",
-        "required": true,
-        "placeholder": "예) 테미스"
-      },
-      {
-        "id": "channel",
-        "label": "방송 채널 주소 (채널 확인용)",
-        "type": "text",
-        "placeholder": "치지직·SOOP·유튜브 채널 주소"
-      },
-      {
         "id": "content",
         "label": "시간표에 들어갈 내용",
         "type": "longtext",
@@ -373,7 +360,7 @@
         "type": "date"
       }
     ],
-    "attachNote": "캐릭터·참고 이미지는 아트머그 문의 창에 첨부해 주세요."
+    "attachNote": "캐릭터·참고 이미지는 아트머그 문의 창에 첨부해 주세요. 연락처는 결제 후 아트머그에서 자동으로 공개돼요."
   },
   "updatedAt": "2026-11-04T16:54:43.298Z"
 }
