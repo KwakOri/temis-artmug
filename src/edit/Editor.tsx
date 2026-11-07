@@ -4,7 +4,7 @@
 // 미리보기의 글자를 누르면 그 자리 팝오버(폰은 아래 시트)에서 원문을 고치고, 사진·금액·목록은 왼쪽 칸 목록의 그 줄로 옮겨 간다(page/editMode.ts).
 import { ArrowDown, ArrowUp, ExternalLink, ImagePlus, ListTree, MousePointerClick, Plus, Settings, Trash2 } from "lucide-react";
 import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
-import type { Doc } from "../page/data";
+import type { Doc, PlanId } from "../page/data";
 import { EDIT_MSG, type FromPage, type PageCmd, type Rect } from "../page/editMode";
 import { DEFAULT_DOC, DRAFT_KEY, PENDING_KEY, fetchPublished, merge, readDraft } from "../page/remote";
 import { SITE } from "../site";
@@ -411,6 +411,40 @@ function InlineEdit({
 const SECTIONS = Object.keys(DEFAULT_DOC) as (keyof Doc)[];
 
 /** 저장할 때 지우지 않을 사진(기본값이 쓰는 것. 「기본값으로 되돌리기」가 다시 찾는다) */
+/** 작업물 탭 위: 사진 여러 장을 한꺼번에 작업물로 붙인다. */
+function BulkWorks({ busy, onPick }: { busy: boolean; onPick: (files: File[], cat: PlanId) => void }) {
+  const [cat, setCat] = useState<PlanId>("unstructured");
+  return (
+    <div className="rounded-xl border border-dashed border-primary/60 bg-white p-3 space-y-2">
+      <p className="text-[13px] font-bold text-ink">사진 여러 장 한꺼번에 추가</p>
+      <div className="flex items-center gap-2">
+        <select aria-label="구성" className={`${input} max-w-[7.5rem] shrink-0`} value={cat} onChange={(e) => setCat(e.target.value as PlanId)}>
+          {CHOICES.cat.map(([v, t]) => (
+            <option key={v} value={v}>
+              {t}
+            </option>
+          ))}
+        </select>
+        <label className={`flex-1 cursor-pointer whitespace-nowrap rounded-lg bg-primary px-3 py-2 text-center text-sm font-bold text-white ${busy ? "pointer-events-none opacity-50" : ""}`}>
+          사진 고르기(여러 장)
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            hidden
+            onChange={(e) => {
+              const files = [...(e.target.files ?? [])];
+              e.target.value = "";
+              if (files.length) onPick(files, cat);
+            }}
+          />
+        </label>
+      </div>
+      <p className="text-[12px] leading-relaxed text-ink/50">고른 구성으로 목록 끝에 붙어요. 사진은 자동으로 줄여서(목록용·크게 보기용 두 장) 저장 때 한 번에 올라가요. 제목에 손님 이름은 넣지 마세요.</p>
+    </div>
+  );
+}
+
 const KEEP = new Set(DEFAULT_DOC.works.items.map((w) => w.src));
 const srcs = (d: Doc) => new Set(d.works.items.map((w) => w.src));
 
@@ -538,21 +572,36 @@ export default function Editor() {
   const edit = (p: Path, v: Json) => setDoc((d) => setIn(d, p, v) as Doc);
 
   // 사진 고르기: 줄여서 새 이름(src)으로 들고 있다가 저장 때 같이 올린다. 미리보기용 작은 사진은 localStorage에도 둔다.
+  const shrink = async (file: File, n = 0) => {
+    const { s, l } = await makeWork(file);
+    const src = `w-${Date.now().toString(36)}${n ? `-${n}` : ""}`;
+    setPending((p) => ({ ...p, [src]: { s, l, url: URL.createObjectURL(s) } }));
+    try {
+      const prev = JSON.parse(localStorage.getItem(PENDING_KEY) ?? "{}");
+      // 확대(l)도 작은 사진으로 보여 준다. 미리보기용이라 브라우저 저장 공간을 아낀다.
+      const small = await toDataUrl(s);
+      localStorage.setItem(PENDING_KEY, JSON.stringify({ ...prev, [src]: { s: small, l: small } }));
+    } catch {
+      // 브라우저 저장 공간이 차면 미리보기에서만 사진이 안 보인다. 저장은 된다.
+    }
+    return { src, s, l };
+  };
   const pick = (path: Path, file: File) =>
     run("사진 줄이기", async () => {
-      const { s, l } = await makeWork(file);
-      const src = `w-${Date.now().toString(36)}`;
-      setPending((p) => ({ ...p, [src]: { s, l, url: URL.createObjectURL(s) } }));
-      try {
-        const prev = JSON.parse(localStorage.getItem(PENDING_KEY) ?? "{}");
-        // 확대(l)도 작은 사진으로 보여 준다. 미리보기용이라 브라우저 저장 공간을 아낀다.
-        const small = await toDataUrl(s);
-        localStorage.setItem(PENDING_KEY, JSON.stringify({ ...prev, [src]: { s: small, l: small } }));
-      } catch {
-        // 브라우저 저장 공간이 차면 미리보기에서만 사진이 안 보인다. 저장은 된다.
-      }
+      const { src, s, l } = await shrink(file);
       edit(path, src);
       return `사진을 줄였어요(${Math.round(s.size / 1024)}KB · ${Math.round(l.size / 1024)}KB). 저장하면 올라가요.`;
+    });
+  // 작업물 여러 장 한꺼번에: 고른 순서대로 목록 끝에 붙인다. 구성은 한 번에 고르고, 제목은 비워 둔다(갤러리엔 안 나온다).
+  const pickMany = (files: File[], cat: PlanId) =>
+    run("사진 여러 장 줄이기", async () => {
+      const added: Doc["works"]["items"] = [];
+      for (const [i, f] of files.entries()) {
+        setMsg(`사진 줄이는 중… ${i + 1} / ${files.length}`);
+        added.push({ src: (await shrink(f, i + 1)).src, cat, title: "" });
+      }
+      setDoc((d) => d && { ...d, works: { ...d.works, items: [...d.works.items, ...added] } });
+      return `작업물 ${added.length}개를 목록 끝에 붙였어요. 저장하면 한 번에 올라가요.`;
     });
 
   const saveToken = () =>
@@ -695,6 +744,7 @@ export default function Editor() {
           </nav>
           <PhotoCtx.Provider value={{ pending, pick }}>
             {tab === "hero" && <Field name="brand" path={["brand"]} value={doc.brand} onChange={edit} />}
+            {tab === "works" && <BulkWorks busy={busy} onPick={pickMany} />}
             <Field name={tab} path={[tab]} value={doc[tab]} onChange={edit} />
           </PhotoCtx.Provider>
           <button type="button" onClick={reset} className="text-[12px] text-ink/50 underline">

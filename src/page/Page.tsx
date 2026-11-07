@@ -1,7 +1,8 @@
 // Temis 아트머그 상세페이지. 칸 순서·문구는 PLANS/TEMIS_ARTMUG_PAGE.md 4절, 값은 data.ts.
-import { ChevronDown, ChevronLeft, ChevronRight, Copy, Heart, Pencil, RotateCcw, Smartphone, Users, X, ZoomIn } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, Copy, Heart, LayoutGrid, Pencil, RotateCcw, Smartphone, Users, X, ZoomIn } from "lucide-react";
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import DemoZone from "../DemoZone";
+import Gallery from "./Gallery";
 import Hero from "./Hero";
 import { cn } from "../lib/utils";
 import { doc, type FormField, type PlanId } from "./data";
@@ -74,6 +75,7 @@ export default function Page() {
   const [planId, setPlanId] = useState<PlanId>("unstructured");
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [zoom, setZoom] = useState<number | null>(null);
+  const [gallery, setGallery] = useState(false);
   const [form, setForm] = useState<Record<string, string>>({});
   const [toast, setToast] = useState("");
 
@@ -162,6 +164,18 @@ export default function Page() {
     setZoom(null);
     go("price");
   };
+
+  const allWorks = (
+    <button
+      type="button"
+      onClick={() => setGallery(true)}
+      className="inline-flex items-center gap-2 h-11 px-5 rounded-full bg-white border-2 border-ink shadow-[3px_3px_0_var(--color-ink)] font-bold text-[14px] hover:text-primary active:translate-x-px active:translate-y-px"
+    >
+      <LayoutGrid size={17} strokeWidth={2.4} />
+      작업물 전체 보기
+      <span className="mono text-[12.5px] text-primary">{doc.works.items.length}</span>
+    </button>
+  );
 
   const zoomed = zoom !== null ? works[zoom] : null;
 
@@ -280,6 +294,7 @@ export default function Page() {
           ))}
         </div>
         <p className="mt-1 text-center text-[13px] text-ink/50 md:hidden">← 옆으로 넘겨 보세요 →</p>
+        {doc.works.items.length > 0 && <div className="mt-4 text-center">{allWorks}</div>}
       </section>
 
       {/* 체험 */}
@@ -300,6 +315,7 @@ export default function Page() {
         thumbs={doc.works.items.map((w) => workSrc(w.src, "s"))}
         caption={doc.works.items.length ? `뒤에 흐르는 시간표는 ${doc.works.count}의 스트리머와 만든 작업물 일부예요` : ""}
         head={<SectionHead kicker="REVIEW" title="먼저 써 본 분들의 이야기" />}
+        more={doc.works.items.length > 0 && allWorks}
       />
 
       {/* 5. 가격: 구성 칩 → 옵션 줄 → 영수증 */}
@@ -449,6 +465,21 @@ export default function Page() {
       <footer className="pb-10 text-center text-[12px] text-ink/40">
         © <span data-edit="brand">{doc.brand}</span>
       </footer>
+
+      {/* 작업물 전체 보기: 덮개를 닫아 페이지 스크롤이 풀린 뒤 가격으로 간다 */}
+      {gallery && (
+        <Gallery
+          works={doc.works.items}
+          count={doc.works.count}
+          src={workSrc}
+          onClose={() => setGallery(false)}
+          onApply={(cat) => {
+            setPlanId(cat);
+            setGallery(false);
+            setTimeout(() => go("price"), 50);
+          }}
+        />
+      )}
 
       {/* 작업물 크게 보기 */}
       {zoomed && (

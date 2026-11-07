@@ -51,7 +51,7 @@ function Row({ items, reverse, sec }: { items: Item[]; reverse?: boolean; sec: n
   );
 }
 
-export default function Reviews({ reviews, thumbs, caption, head }: { reviews: Review[]; thumbs: string[]; caption: string; head: ReactNode }) {
+export default function Reviews({ reviews, thumbs, caption, head, more }: { reviews: Review[]; thumbs: string[]; caption: string; head: ReactNode; more?: ReactNode }) {
   if (!reviews.length) return null;
   const list = reviews.map((r, at) => ({ ...r, at }));
   const top = repeat(list, 6);
@@ -94,6 +94,7 @@ export default function Reviews({ reviews, thumbs, caption, head }: { reviews: R
             <span data-edit="works.count" className="inline-block rounded-2xl bg-[#1b1612] text-[#f5f0ed] text-[12.5px] md:text-[13px] font-semibold px-3.5 py-1.5">{caption}</span>
           </p>
         )}
+        {more && <div className="mt-3 px-4 text-center">{more}</div>}
       </div>
     </section>
   );
