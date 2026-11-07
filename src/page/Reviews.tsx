@@ -7,6 +7,8 @@ interface Review {
   quote: string;
   body: string;
 }
+/** at: content.json의 몇 번째 후기인지(/edit 「눌러 고치기」 경로) */
+type Item = Review & { at: number };
 
 /** 목록을 n개 이상이 될 때까지 되풀이 */
 const repeat = <T,>(items: T[], n: number) =>
@@ -22,18 +24,18 @@ const lines = (text: string) =>
     </Fragment>
   ));
 
-function Card({ r }: { r: Review }) {
+function Card({ r }: { r: Item }) {
   return (
     <figure className="w-[272px] md:w-[340px] mr-4 md:mr-5 rounded-2xl bg-[#fffdf9] border-2 border-[#1b1612] shadow-[4px_4px_0_#1b1612] p-4 md:p-5">
       <span aria-hidden className="block font-[BagelFat] text-3xl leading-none text-primary h-5">“</span>
-      <blockquote className="font-bold text-[15px] md:text-base leading-snug text-[#1b1612]">{r.quote}</blockquote>
-      <p className="mt-2.5 pt-2.5 border-t-2 border-dashed border-[#1b1612]/15 text-[13px] md:text-sm text-[#1b1612]/65 leading-relaxed">{lines(r.body)}</p>
+      <blockquote data-edit={`reviews.${r.at}.quote`} className="font-bold text-[15px] md:text-base leading-snug text-[#1b1612]">{r.quote}</blockquote>
+      <p data-edit={`reviews.${r.at}.body`} className="mt-2.5 pt-2.5 border-t-2 border-dashed border-[#1b1612]/15 text-[13px] md:text-sm text-[#1b1612]/65 leading-relaxed">{lines(r.body)}</p>
     </figure>
   );
 }
 
 /** 후기 한 줄. 같은 묶음을 두 번 놓고 -50%까지 흘려 이음매 없이 돈다. */
-function Row({ items, reverse, sec }: { items: Review[]; reverse?: boolean; sec: number }) {
+function Row({ items, reverse, sec }: { items: Item[]; reverse?: boolean; sec: number }) {
   return (
     <div className="marquee-row overflow-hidden py-2 [mask-image:linear-gradient(90deg,transparent,#000_6%,#000_94%,transparent)]">
       <div className={reverse ? "marquee marquee-rev" : "marquee"} style={{ "--dur": `${sec}s` } as CSSProperties}>
@@ -51,8 +53,9 @@ function Row({ items, reverse, sec }: { items: Review[]; reverse?: boolean; sec:
 
 export default function Reviews({ reviews, thumbs, caption, head }: { reviews: Review[]; thumbs: string[]; caption: string; head: ReactNode }) {
   if (!reviews.length) return null;
-  const top = repeat(reviews, 6);
-  const bottom = repeat(rotate([...reviews].reverse(), 1), 6);
+  const list = reviews.map((r, at) => ({ ...r, at }));
+  const top = repeat(list, 6);
+  const bottom = repeat(rotate([...list].reverse(), 1), 6);
   return (
     <section id="review" className="relative overflow-hidden py-12 md:py-16 bg-[#f5f0ed]">
       {/* 작업물 벽: 꾸밈. 기울인 세 줄이 후기와 다른 속도로 흐른다 */}
@@ -88,7 +91,7 @@ export default function Reviews({ reviews, thumbs, caption, head }: { reviews: R
         </div>
         {caption && (
           <p className="mt-6 px-4 text-center">
-            <span className="inline-block rounded-2xl bg-[#1b1612] text-[#f5f0ed] text-[12.5px] md:text-[13px] font-semibold px-3.5 py-1.5">{caption}</span>
+            <span data-edit="works.count" className="inline-block rounded-2xl bg-[#1b1612] text-[#f5f0ed] text-[12.5px] md:text-[13px] font-semibold px-3.5 py-1.5">{caption}</span>
           </p>
         )}
       </div>

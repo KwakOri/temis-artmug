@@ -118,3 +118,39 @@ button {
     transparent 12px 15px
   );
 }
+
+/* /edit 미리보기 「눌러 고치기」(?draft&edit, page/editMode.ts): 고칠 수 있는 글자·사진에 점선, 누른 칸은 파랑 */
+.edit-mode [data-edit] {
+  cursor: pointer;
+  outline: 1.5px dashed rgb(47 107 255 / 0.45);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.edit-mode [data-edit]:hover {
+  outline: 2px solid #2f6bff;
+  background-color: rgb(47 107 255 / 0.06);
+}
+.edit-mode [data-edit].edit-on {
+  outline: 2.5px solid #2f6bff;
+  outline-offset: 3px;
+  background-color: rgb(47 107 255 / 0.1);
+}
+/* 흐르는 후기·작업물 벽은 멈춰야 누를 수 있다 */
+.edit-mode .marquee {
+  animation-play-state: paused;
+}
+
+/* /edit 패널: 미리보기에서 누른 칸으로 옮겨 왔을 때 잠깐 빛난다 */
+.edit-flash {
+  animation: edit-flash 1.8s ease-out;
+  border-radius: 10px;
+}
+@keyframes edit-flash {
+  0%,
+  35% {
+    box-shadow: 0 0 0 3px #2f6bff, 0 0 0 9px rgb(47 107 255 / 0.18);
+  }
+  100% {
+    box-shadow: 0 0 0 3px transparent, 0 0 0 9px transparent;
+  }
+}

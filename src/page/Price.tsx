@@ -95,7 +95,7 @@ export default function Price({ brand, plans, options, planId, setPlanId, picked
           <div>
             {/* 구성 칩 */}
             <div className="grid grid-cols-3 gap-2 md:gap-3" role="radiogroup" aria-label="구성">
-              {plans.map((p) => {
+              {plans.map((p, pi) => {
                 const on = planId === p.id;
                 return (
                   <button
@@ -110,25 +110,32 @@ export default function Price({ brand, plans, options, planId, setPlanId, picked
                     )}
                   >
                     {p.badge && (
-                      <span className="absolute -top-2.5 right-2 rounded-full bg-gradient-to-r from-primary to-secondary text-white text-[11px] font-bold px-2 py-0.5 border-2 border-[#1b1612]">
+                      <span data-edit={`pricing.plans.${pi}.badge`} className="absolute -top-2.5 right-2 rounded-full bg-gradient-to-r from-primary to-secondary text-white text-[11px] font-bold px-2 py-0.5 border-2 border-[#1b1612]">
                         {p.badge}
                       </span>
                     )}
-                    <span className="block font-bold text-[13.5px] md:text-base leading-tight">{p.name.replace(/\s*시간표$/, "")}</span>
-                    <span className={cn(MONO, "block mt-0.5 text-[13px] md:text-[15px] font-bold", on ? "text-secondary" : "text-[#1b1612]/70")}>{num(p.price)}</span>
+                    <span data-edit={`pricing.plans.${pi}.name`} className="block font-bold text-[13.5px] md:text-base leading-tight">
+                      {p.name.replace(/\s*시간표$/, "")}
+                    </span>
+                    <span data-edit={`pricing.plans.${pi}.price`} className={cn(MONO, "block mt-0.5 text-[13px] md:text-[15px] font-bold", on ? "text-secondary" : "text-[#1b1612]/70")}>{num(p.price)}</span>
                   </button>
                 );
               })}
             </div>
             <p className="mt-3 text-[13px] md:text-sm text-[#1b1612]/70 leading-relaxed">
-              <b className="text-[#1b1612]">{plan.name}</b> · {plan.desc}
-              <span className="block mt-1 text-[12.5px] text-[#1b1612]/55">{plan.points.join(" · ")}</span>
+              <b data-edit={`pricing.plans.${plans.indexOf(plan)}.name`} className="text-[#1b1612]">
+                {plan.name}
+              </b>{" "}
+              · <span data-edit={`pricing.plans.${plans.indexOf(plan)}.desc`}>{plan.desc}</span>
+              <span className="block mt-1 text-[12.5px] text-[#1b1612]/55">
+                <span data-edit={`pricing.plans.${plans.indexOf(plan)}.points`}>{plan.points.join(" · ")}</span>
+              </span>
             </p>
 
             {/* 옵션 줄 */}
             <h3 className="mt-6 mb-2 font-bold text-[15px] md:text-base">추가 옵션</h3>
             <ul className="rounded-2xl border-2 border-[#1b1612] bg-[#fffdf9] divide-y-2 divide-dashed divide-[#1b1612]/10 px-3 md:px-4">
-              {options.map((o) => {
+              {options.map((o, oi) => {
                 const on = picked.has(o.id);
                 const by = on ? [] : blockers(o);
                 const dim = by.length > 0;
@@ -145,11 +152,17 @@ export default function Price({ brand, plans, options, planId, setPlanId, picked
                         >
                           {on && <Check size={14} strokeWidth={3.2} />}
                         </span>
-                        <span className="font-bold text-[14.5px] md:text-[15px] text-[#1b1612] shrink-0">{o.name}</span>
+                        <span data-edit={`pricing.options.${oi}.name`} className="font-bold text-[14.5px] md:text-[15px] text-[#1b1612] shrink-0">
+                          {o.name}
+                        </span>
                         <span aria-hidden className="flex-1 min-w-3 self-end mb-[6px] border-b-2 border-dotted border-[#1b1612]/20" />
-                        <Tag o={o} plan={plan} />
+                        <span data-edit={`pricing.options.${oi}.value`} className="shrink-0">
+                          <Tag o={o} plan={plan} />
+                        </span>
                       </span>
-                      <span className={cn("block mt-1 pl-[32px] text-[12.5px] md:text-[13px] text-[#1b1612]/55 leading-snug", dim && "opacity-40")}>{o.desc}</span>
+                      <span className={cn("block mt-1 pl-[32px] text-[12.5px] md:text-[13px] text-[#1b1612]/55 leading-snug", dim && "opacity-40")}>
+                        <span data-edit={`pricing.options.${oi}.desc`}>{o.desc}</span>
+                      </span>
                       {dim && (
                         <span className="block mt-1 pl-[32px] text-[12.5px] font-bold text-primary">
                           ↳ {names}
@@ -204,7 +217,7 @@ export default function Price({ brand, plans, options, planId, setPlanId, picked
                   </p>
                 )}
                 <div className="my-3 border-t-2 border-dashed border-[#1b1612]/30" />
-                <Line left={`수정 ${revisions}회`} right={period} />
+                <Line left={<span data-edit="pricing.revisions">수정 {revisions}회</span>} right={<span data-edit="pricing.period">{period}</span>} />
                 <div aria-hidden className="barcode mt-4 h-11" />
                 <p className="mt-2 text-center text-[11.5px] text-[#1b1612]/50 " style={{ fontFamily: '"Pretendard Variable", Pretendard, sans-serif' }}>최종 금액은 아트머그 결제 화면 기준이에요.</p>
               </div>

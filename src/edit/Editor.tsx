@@ -1,9 +1,11 @@
 // 손님용 편집기: data.ts 모양 그대로 칸을 그려 고치고, 깃허브 저장소의 public/content.json(+작업물 사진)으로 저장한다.
 // 저장하면 GitHub Actions가 다시 배포해 1~2분 뒤 상세페이지에 적용된다.
-// 오른쪽 미리보기는 ./?draft(localStorage의 고치는 중인 내용)를 띄운다.
-import { ArrowDown, ArrowUp, ExternalLink, ImagePlus, Plus, Settings, Trash2 } from "lucide-react";
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+// 오른쪽 미리보기는 ./?draft&edit(localStorage의 고치는 중인 내용)를 띄운다.
+// 미리보기의 글자를 누르면 그 자리 팝오버(폰은 아래 시트)에서 원문을 고치고, 사진·금액·목록은 왼쪽 칸 목록의 그 줄로 옮겨 간다(page/editMode.ts).
+import { ArrowDown, ArrowUp, ExternalLink, ImagePlus, ListTree, MousePointerClick, Plus, Settings, Trash2 } from "lucide-react";
+import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import type { Doc } from "../page/data";
+import { EDIT_MSG, type FromPage, type PageCmd, type Rect } from "../page/editMode";
 import { DEFAULT_DOC, DRAFT_KEY, PENDING_KEY, fetchPublished, merge, readDraft } from "../page/remote";
 import { SITE } from "../site";
 import { WORKS_DIR, commit, connect, forgetToken, getToken, loadContent } from "./github";
@@ -24,6 +26,7 @@ const LABEL: Record<string, string> = {
   body: "본문",
   sub: "설명",
   works: "작업물",
+  src: "사진",
   items: "항목",
   cat: "구성",
   demo: "체험존",
@@ -80,7 +83,7 @@ function Photo({ path, src }: { path: Path; src: string }) {
   const ref = useRef<HTMLInputElement>(null);
   const url = pending[src]?.url ?? (src ? `./works/${src}-s.webp` : "");
   return (
-    <div className="flex items-center gap-3">
+    <div data-path={path.join(".")} className="flex items-center gap-3">
       {url ? <img src={url} alt="" className="h-16 w-28 rounded-md bg-white object-cover" /> : <div className="grid h-16 w-28 place-items-center rounded-md bg-white text-[12px] text-red-500">사진 없음</div>}
       <button type="button" onClick={() => ref.current?.click()} className="flex items-center gap-1 rounded-full border border-ink/20 bg-white px-3 py-1.5 text-[13px] font-bold">
         <ImagePlus size={15} /> {src ? "사진 바꾸기" : "사진 고르기"}
@@ -101,6 +104,9 @@ function Photo({ path, src }: { path: Path; src: string }) {
 }
 
 const key = (p: Path) => p.filter((x) => typeof x === "string").join(".");
+/** "reviews.2.body" → ["reviews", 2, "body"] */
+const parsePath = (s: string): Path => s.split(".").map((x) => (/^\d+$/.test(x) ? Number(x) : x));
+const getIn = (root: Json, path: Path): Json => path.reduce<Json>((v, k) => (v == null ? v : (v as Record<string | number, Json>)[k]), root);
 const isObj = (v: Json): v is Record<string, Json> => !!v && typeof v === "object" && !Array.isArray(v);
 
 function setIn(root: Json, path: Path, v: Json): Json {
@@ -127,10 +133,11 @@ function Field({ name, path, value, onChange }: { name: string; path: Path; valu
   if (HIDDEN.has(name) || HIDDEN.has(k)) return null;
   if (k === "works.items.src" && typeof value === "string") return <Photo path={path} src={value} />;
   const label = LABEL[name] ?? name;
+  const dp = path.join(".");
 
   if (CHOICES[name] && typeof value === "string")
     return (
-      <label className="block">
+      <label data-path={dp} className="block">
         <span className="text-[13px] font-semibold text-ink/70">{label}</span>
         <select className={input} value={value} onChange={(e) => onChange(path, e.target.value)}>
           {CHOICES[name].map(([v, t]) => (
@@ -143,14 +150,14 @@ function Field({ name, path, value, onChange }: { name: string; path: Path; valu
     );
   if (typeof value === "boolean")
     return (
-      <label className="flex items-center gap-2 text-sm">
+      <label data-path={dp} className="flex items-center gap-2 text-sm">
         <input type="checkbox" checked={value} onChange={(e) => onChange(path, e.target.checked)} className="accent-primary size-4" />
         {label}
       </label>
     );
   if (typeof value === "number")
     return (
-      <label className="block">
+      <label data-path={dp} className="block">
         <span className="text-[13px] font-semibold text-ink/70">{label}</span>
         <input type="number" className={input} value={value} onChange={(e) => onChange(path, e.target.value === "" ? 0 : Number(e.target.value))} />
       </label>
@@ -158,7 +165,7 @@ function Field({ name, path, value, onChange }: { name: string; path: Path; valu
   if (typeof value === "string") {
     const long = value.includes("\n") || value.length > 40 || ["body", "sub", "desc", "quote"].includes(name);
     return (
-      <label className="block">
+      <label data-path={dp} className="block">
         <span className="text-[13px] font-semibold text-ink/70">{label}</span>
         {long ? (
           <textarea className={input} rows={Math.max(2, value.split("\n").length + 1)} value={value} onChange={(e) => onChange(path, e.target.value)} />
@@ -176,10 +183,10 @@ function Field({ name, path, value, onChange }: { name: string; path: Path; valu
       onChange(path, next);
     };
     return (
-      <fieldset className="rounded-xl border border-timetable-card-border p-3 space-y-2">
+      <fieldset data-path={dp} className="rounded-xl border border-timetable-card-border p-3 space-y-2">
         <legend className="px-1 text-[13px] font-bold text-ink">{label}</legend>
         {value.map((item, i) => (
-          <div key={i} className={isObj(item) ? "rounded-lg bg-[#f5f0ed] p-3 space-y-2" : "flex items-start gap-1"}>
+          <div key={i} data-path={`${dp}.${i}`} className={isObj(item) ? "rounded-lg bg-[#f5f0ed] p-3 space-y-2" : "flex items-start gap-1"}>
             <div className={isObj(item) ? "flex items-center gap-1" : "contents"}>
               {isObj(item) && <span className="flex-1 text-[13px] font-bold text-primary">{i + 1}. {String(item.name ?? item.title ?? item.label ?? item.quote ?? "").slice(0, 30)}</span>}
               {!isObj(item) && (
@@ -215,13 +222,190 @@ function Field({ name, path, value, onChange }: { name: string; path: Path; valu
     return path.length === 1 ? (
       <>{body}</>
     ) : (
-      <fieldset className="rounded-xl border border-timetable-card-border p-3 space-y-2">
+      <fieldset data-path={dp} className="rounded-xl border border-timetable-card-border p-3 space-y-2">
         <legend className="px-1 text-[13px] font-bold text-ink">{label}</legend>
         {body}
       </fieldset>
     );
   }
   return null;
+}
+
+/** 미리보기에서 누른 칸을 어떻게 고칠지: 글자는 그 자리 입력창, 사진은 사진 바꾸기, 나머지(금액·종류·목록·순서)는 칸 목록으로 */
+const kindOf = (path: Path, v: Json): "text" | "photo" | "panel" => {
+  const name = String([...path].reverse().find((x) => typeof x === "string") ?? "");
+  if (name === "src") return "photo";
+  return typeof v === "string" && !CHOICES[name] && !HIDDEN.has(name) && !HIDDEN.has(key(path)) ? "text" : "panel";
+};
+
+/** "후기 › 3번 › 본문" */
+const describe = (path: Path) => path.map((x) => (typeof x === "number" ? `${x + 1}번` : (LABEL[x] ?? x))).join(" › ");
+
+/** *강조*·줄바꿈·{숫자}처럼 화면과 원문이 다른 칸에 붙이는 설명 */
+const RICH = new Set(["works.title", "works.sub", "demo.title", "demo.sub"]);
+const hintsFor = (path: Path, d: Doc) => {
+  const k = key(path);
+  const out: string[] = [];
+  if (RICH.has(k)) out.push("*별표* 사이 글자는 주황색으로 강조돼요.");
+  if (RICH.has(k) || k === "reviews.body") out.push("줄바꿈은 그대로 보여요.");
+  if (k === "works.title") out.push(`{숫자}는 「함께한 스트리머 수」(지금: ${d.works.count})로 바뀌어요.`);
+  if (k === "works.count") out.push("작업물 칸 제목의 {숫자}와 후기 칸 아래 문구에 들어가요.");
+  if (k === "process.body") out.push(`{횟수}는 기본 수정 횟수(지금: ${d.pricing.revisions}회)로 바뀌어요.`);
+  if (k === "pricing.period") out.push("가격 칸 설명과 영수증에 같이 들어가요.");
+  if (k === "form.fields.placeholder") out.push("신청 양식 칸 안에 흐리게 보이는 예시 문구예요.");
+  return out;
+};
+
+type Sel = { path: Path; rect: Rect; orig: Json };
+
+/** 미리보기에서 누른 글자·사진을 고치는 창. PC는 누른 자리 옆 팝오버, 폰(sheet)은 아래에서 올라오는 시트.
+ *  고치는 대로 미리보기에 바로 보이고, 「취소」는 열기 전 값으로 되돌린다. 저장(커밋)은 위의 「저장」에서 한 번에. */
+function InlineEdit({
+  sel,
+  doc,
+  frame,
+  sheet,
+  onEdit,
+  onClose,
+  onPanel,
+  onSheetHeight,
+}: {
+  sel: Sel;
+  doc: Doc;
+  frame: HTMLIFrameElement | null;
+  sheet: boolean;
+  onEdit: (p: Path, v: Json) => void;
+  onClose: () => void;
+  onPanel: (p: Path) => void;
+  onSheetHeight: (h: number) => void;
+}) {
+  const box = useRef<HTMLDivElement>(null);
+  const field = useRef<HTMLTextAreaElement>(null);
+  const photoIn = useRef<HTMLInputElement>(null);
+  const { pending, pick } = useContext(PhotoCtx);
+  const [h, setH] = useState(220);
+  const [kb, setKb] = useState(0);
+  const value = getIn(doc, sel.path);
+  const photo = kindOf(sel.path, value) === "photo";
+  const cancel = () => {
+    onEdit(sel.path, sel.orig);
+    onClose();
+  };
+
+  useLayoutEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => {
+      setH(el.offsetHeight);
+      if (sheet) onSheetHeight(el.offsetHeight);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [sheet]);
+
+  // 새 칸을 누르면 입력창으로 바로(PC만. 폰은 키보드가 미리보기를 가려서 직접 누르게 둔다)
+  useEffect(() => {
+    if (!sheet) field.current?.focus({ preventScroll: true });
+  }, [sel.path.join("."), sheet]);
+
+  // 아이폰: 키보드가 올라와도 시트가 키보드 위에 붙어 있게
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!sheet || !vv) return;
+    const fit = () => setKb(Math.max(0, innerHeight - vv.height - vv.offsetTop));
+    vv.addEventListener("resize", fit);
+    vv.addEventListener("scroll", fit);
+    fit();
+    return () => {
+      vv.removeEventListener("resize", fit);
+      vv.removeEventListener("scroll", fit);
+    };
+  }, [sheet]);
+
+  let style: CSSProperties;
+  if (sheet) style = { bottom: kb };
+  else {
+    const f = frame?.getBoundingClientRect() ?? { left: 0, top: 0, right: innerWidth, bottom: innerHeight };
+    const w = Math.min(460, Math.max(320, sel.rect.w + 24), f.right - f.left - 16);
+    const left = Math.min(Math.max(f.left + sel.rect.x - 12, f.left + 8), f.right - w - 8);
+    const below = f.top + sel.rect.y + sel.rect.h + 10;
+    const above = f.top + sel.rect.y - h - 10;
+    const top = below + h <= innerHeight - 8 || above < f.top + 8 ? Math.min(below, innerHeight - h - 8) : above;
+    style = { left, top: Math.max(8, top), width: w };
+  }
+
+  const hints = hintsFor(sel.path, doc);
+  const text = typeof value === "string" ? value : "";
+  const src = photo ? text : "";
+  const thumb = pending[src]?.url ?? (src ? `./works/${src}-s.webp` : "");
+
+  return (
+    <div
+      ref={box}
+      role="dialog"
+      aria-label={describe(sel.path)}
+      style={style}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") cancel();
+        else if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) onClose();
+      }}
+      className={
+        sheet
+          ? "fixed inset-x-0 z-30 rounded-t-2xl border-t border-[#2f6bff]/30 bg-white px-4 pt-2 pb-[calc(12px+env(safe-area-inset-bottom))] shadow-[0_-8px_30px_rgba(27,22,18,0.18)]"
+          : "fixed z-30 rounded-2xl border-2 border-[#2f6bff] bg-white p-3 shadow-[0_10px_30px_rgba(27,22,18,0.2)]"
+      }
+    >
+      {sheet && <div aria-hidden className="mx-auto mb-2 h-1 w-10 rounded-full bg-ink/15" />}
+      <div className="flex items-center gap-2">
+        <b className="flex-1 truncate text-[12.5px] text-[#2f6bff]">{describe(sel.path)}</b>
+        <button type="button" onClick={() => onPanel(sel.path)} className="flex shrink-0 items-center gap-1 text-[12px] text-ink/50 hover:text-ink">
+          <ListTree size={14} /> 칸 목록에서 보기
+        </button>
+      </div>
+      {photo ? (
+        <div className="mt-2 flex items-center gap-3">
+          {thumb ? <img src={thumb} alt="" className="h-16 w-28 rounded-md bg-[#f5f0ed] object-cover" /> : <div className="grid h-16 w-28 place-items-center rounded-md bg-[#f5f0ed] text-[12px] text-red-500">사진 없음</div>}
+          <button type="button" onClick={() => photoIn.current?.click()} className="flex items-center gap-1 rounded-full bg-[#2f6bff] px-3.5 py-2 text-[13px] font-bold text-white">
+            <ImagePlus size={15} /> 사진 바꾸기
+          </button>
+          <input
+            ref={photoIn}
+            type="file"
+            accept="image/*"
+            hidden
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) pick(sel.path, f);
+              e.target.value = "";
+            }}
+          />
+        </div>
+      ) : (
+        <textarea
+          ref={field}
+          value={text}
+          rows={Math.min(8, Math.max(2, text.split("\n").length + (text.length > 40 ? 1 : 0)))}
+          onChange={(e) => onEdit(sel.path, e.target.value)}
+          className={`${input} mt-2 leading-relaxed ${sheet ? "text-base" : ""}`}
+        />
+      )}
+      {hints.length > 0 && (
+        <ul className="mt-1.5 space-y-0.5 text-[12px] leading-snug text-ink/55">
+          {hints.map((t) => (
+            <li key={t}>{t}</li>
+          ))}
+        </ul>
+      )}
+      <div className={`mt-2.5 flex gap-2 ${sheet ? "" : "justify-end"}`}>
+        <button type="button" onClick={cancel} className={`h-9 rounded-full bg-[#f5f0ed] px-4 text-[13px] font-bold ${sheet ? "h-11 flex-1" : ""}`}>
+          취소
+        </button>
+        <button type="button" onClick={onClose} className={`h-9 rounded-full bg-[#2f6bff] px-4 text-[13px] font-bold text-white ${sheet ? "h-11 flex-1" : ""}`}>
+          적용
+        </button>
+      </div>
+    </div>
+  );
 }
 
 const SECTIONS = Object.keys(DEFAULT_DOC) as (keyof Doc)[];
@@ -240,6 +424,18 @@ export default function Editor() {
   const [setup, setSetup] = useState(false);
   const [token, setToken] = useState("");
   const savedDoc = (): Doc => JSON.parse(saved);
+  // 미리보기 눌러 고치기
+  const frame = useRef<HTMLIFrameElement>(null);
+  const head = useRef<HTMLElement>(null);
+  const [headH, setHeadH] = useState(52);
+  const [sel, setSel] = useState<Sel | null>(null);
+  const [clickEdit, setClickEdit] = useState(true);
+  /** 폰(lg 미만)은 칸 목록과 미리보기를 번갈아 본다 */
+  const [view, setView] = useState<"form" | "preview">("form");
+  const [sheet, setSheet] = useState(() => innerWidth < 640);
+  const docRef = useRef(doc);
+  docRef.current = doc;
+  const toPage = (m: PageCmd) => frame.current?.contentWindow?.postMessage({ type: EDIT_MSG, ...m }, location.origin);
 
   // 처음: 저장소의 최신 content.json(없으면 배포본, 그것도 없으면 기본값)을 불러오고, 저장 안 한 고친 내용이 있으면 이어서 할지 묻는다.
   // 고르던 사진은 브라우저를 닫으면 사라지므로, 이어서 고칠 때 사진 없는 항목은 「사진 없음」으로 보인다.
@@ -267,6 +463,65 @@ export default function Editor() {
     addEventListener("beforeunload", warn);
     return () => removeEventListener("beforeunload", warn);
   }, [dirty]);
+
+  useLayoutEffect(() => {
+    const el = head.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setHeadH(el.offsetHeight));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [doc === null]);
+
+  useEffect(() => {
+    const fit = () => setSheet(innerWidth < 640);
+    addEventListener("resize", fit);
+    return () => removeEventListener("resize", fit);
+  }, []);
+
+  // 미리보기(page/editMode.ts)가 보내는 「이 칸을 눌렀어요」
+  useEffect(() => {
+    const onMsg = (e: MessageEvent<FromPage>) => {
+      if (e.origin !== location.origin || e.source !== frame.current?.contentWindow || e.data?.type !== EDIT_MSG || !docRef.current) return;
+      const m = e.data;
+      if (m.action === "move") return setSel((s) => (s ? { ...s, rect: m.rect } : s));
+      const path = parsePath(m.path);
+      const v = getIn(docRef.current, path);
+      if (v === undefined) return;
+      if (kindOf(path, v) === "panel") {
+        setSel(null);
+        toPage({ action: "clear" });
+        goPanel(path);
+      } else setSel((s) => (s && s.path.join(".") === m.path ? { ...s, rect: m.rect } : { path, rect: m.rect, orig: v }));
+    };
+    addEventListener("message", onMsg);
+    return () => removeEventListener("message", onMsg);
+  }, []);
+
+  const closeSel = () => {
+    setSel(null);
+    toPage({ action: "clear" });
+  };
+
+  /** 왼쪽 칸 목록에서 그 탭·줄로 옮겨 가 잠깐 빛나게 한다(금액·종류·목록·순서는 여기서만 고친다) */
+  const goPanel = (path: Path) => {
+    setSel(null);
+    toPage({ action: "clear" });
+    setTab((path[0] === "brand" ? "hero" : path[0]) as keyof Doc);
+    setView("form");
+    setTimeout(() => {
+      for (let n = path.length; n > 0; n--) {
+        const el = document.querySelector<HTMLElement>(`[data-path="${CSS.escape(path.slice(0, n).join("."))}"]`);
+        if (!el) continue;
+        el.scrollIntoView({ block: "center", behavior: "smooth" });
+        el.classList.remove("edit-flash");
+        void el.offsetWidth;
+        el.classList.add("edit-flash");
+        setTimeout(() => el.classList.remove("edit-flash"), 1900);
+        if (innerWidth >= 1024) el.querySelector<HTMLElement>("input:not([type=file]),select,textarea")?.focus({ preventScroll: true });
+        break;
+      }
+    }, 80);
+  };
 
   const run = async (label: string, job: () => Promise<string | void>) => {
     setBusy(true);
@@ -351,7 +606,7 @@ export default function Editor() {
 
   return (
     <div className="min-h-screen text-ink">
-      <header className="sticky top-0 z-10 flex flex-wrap items-center gap-2 border-b border-timetable-card-border bg-[#f5f0ed]/95 px-4 py-2 backdrop-blur">
+      <header ref={head} className="sticky top-0 z-20 flex flex-wrap items-center gap-2 border-b border-timetable-card-border bg-[#f5f0ed]/95 px-4 py-2 backdrop-blur">
         <b className="font-[BagelFat] text-primary">TEMIS</b>
         <span className="text-sm font-bold">상세페이지 고치기 · {doc.brand}</span>
         <span className="flex-1" />
@@ -365,6 +620,26 @@ export default function Editor() {
         <a href="./" target="_blank" className="flex items-center gap-1 text-[13px] text-ink/60">
           상세페이지 <ExternalLink size={14} />
         </a>
+        <div className="flex w-full gap-1 lg:hidden">
+          {(
+            [
+              ["form", "칸 목록"],
+              ["preview", "미리보기에서 고치기"],
+            ] as const
+          ).map(([v, t]) => (
+            <button
+              key={v}
+              type="button"
+              onClick={() => {
+                setView(v);
+                if (v === "form") closeSel();
+              }}
+              className={`h-8 flex-1 rounded-full text-[13px] font-bold ${view === v ? "bg-ink text-white" : "bg-white text-ink/60"}`}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
         {msg && <p className="w-full select-all text-[13px] text-ink/80">{msg}</p>}
         {setup && (
           <div className="w-full space-y-2 rounded-xl bg-white p-4 text-[13px] leading-relaxed">
@@ -410,7 +685,7 @@ export default function Editor() {
       </header>
 
       <div className="lg:grid lg:grid-cols-[minmax(380px,520px)_1fr]">
-        <main className="space-y-3 p-4">
+        <main className={`space-y-3 p-4 ${view === "preview" ? "hidden lg:block" : ""}`}>
           <nav className="flex flex-wrap gap-1">
             {SECTIONS.filter((s) => s !== "brand").map((s) => (
               <button key={s} type="button" onClick={() => setTab(s)} className={`rounded-full px-3 py-1 text-[13px] font-semibold ${tab === s ? "bg-ink text-white" : "bg-white text-ink/70"}`}>
@@ -429,10 +704,47 @@ export default function Editor() {
             줄바꿈은 그대로 보여요. 진행 순서의 {"{횟수}"}는 수정 횟수로, 작업물 제목의 {"{숫자}"}는 「함께한 스트리머 수」로 바뀌어요. 작업물 사진은 「사진 고르기」로 바꿔요(저장 때 같이 올라가요). 첫 화면 디자인은 여기서 못 고쳐요.
           </p>
         </main>
-        <aside className="hidden lg:block sticky top-[52px] h-[calc(100vh-52px)] border-l border-timetable-card-border">
-          <iframe src="./?draft" title="미리보기" className="h-full w-full bg-white" />
+        <aside
+          style={{ top: headH, height: `calc(100dvh - ${headH}px)` }}
+          className={`sticky flex-col border-l border-timetable-card-border ${view === "preview" ? "flex" : "hidden lg:flex"}`}
+        >
+          <div className="flex items-center gap-2 border-b border-timetable-card-border bg-white px-3 py-1.5 text-[12.5px]">
+            <MousePointerClick size={15} className={clickEdit ? "text-[#2f6bff]" : "text-ink/40"} />
+            <span className="flex-1 text-ink/70">{clickEdit ? "점선 글자를 누르면 바로 고쳐요. 사진·금액·목록은 칸 목록으로 옮겨 가요." : "미리보기를 손님처럼 눌러 볼 수 있어요."}</span>
+            <label className="flex shrink-0 items-center gap-1.5 font-bold">
+              <input
+                type="checkbox"
+                checked={clickEdit}
+                onChange={(e) => {
+                  setClickEdit(e.target.checked);
+                  if (!e.target.checked) setSel(null);
+                  toPage({ action: "mode", on: e.target.checked });
+                }}
+                className="accent-[#2f6bff] size-4"
+              />
+              눌러 고치기
+            </label>
+          </div>
+          <iframe ref={frame} src="./?draft&edit" title="미리보기" onLoad={() => toPage({ action: "mode", on: clickEdit })} className="w-full flex-1 bg-white" />
         </aside>
       </div>
+      {sel && (
+        <PhotoCtx.Provider value={{ pending, pick }}>
+          <InlineEdit
+            sel={sel}
+            doc={doc}
+            frame={frame.current}
+            sheet={sheet}
+            onEdit={edit}
+            onClose={closeSel}
+            onPanel={goPanel}
+            onSheetHeight={(h) => {
+              const f = frame.current?.getBoundingClientRect();
+              toPage({ action: "reveal", bottom: Math.max(0, h - (f ? innerHeight - f.bottom : 0)) });
+            }}
+          />
+        </PhotoCtx.Provider>
+      )}
     </div>
   );
 }

@@ -98,7 +98,9 @@ export default function Slots({ csvUrl, note, head }: { csvUrl: string; note: st
             </article>
           ))}
         </div>
-        <p className="mt-3 text-center text-[13px] text-ink/60">{note}</p>
+        <p className="mt-3 text-center text-[13px] text-ink/60">
+          <span data-edit="slots.note">{note}</span>
+        </p>
       </div>
     </section>
   );

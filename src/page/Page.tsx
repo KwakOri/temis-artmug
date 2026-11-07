@@ -54,12 +54,17 @@ const go = (id: string) => document.getElementById(id)?.scrollIntoView({ behavio
 const CAT_LABEL: Record<PlanId, string> = { structured: "정형", unstructured: "비정형", team: "팀" };
 const BENEFIT_ICON = { pencil: Pencil, phone: Smartphone, users: Users, heart: Heart } as const;
 
-function SectionHead({ kicker, title, sub }: { kicker: string; title: string; sub?: string }) {
+/** edit: /edit 「눌러 고치기」용 content.json 경로(제목·설명). 코드에 박힌 제목은 비운다. */
+function SectionHead({ kicker, title, sub, edit }: { kicker: string; title: string; sub?: string; edit?: { title?: string; sub?: string } }) {
   return (
     <div className="mb-6 md:mb-8 text-center">
       <span className="font-[BagelFat] text-primary text-sm tracking-wider">{kicker}</span>
-      <h2 className="mt-1 text-2xl md:text-3xl font-extrabold text-ink">{rich(title)}</h2>
-      {sub && <p className="mt-2 text-[15px] text-ink/70 leading-relaxed text-balance">{rich(sub)}</p>}
+      <h2 data-edit={edit?.title} className="mt-1 text-2xl md:text-3xl font-extrabold text-ink">{rich(title)}</h2>
+      {sub && (
+        <p data-edit={edit?.sub} className="mt-2 text-[15px] text-ink/70 leading-relaxed text-balance">
+          {rich(sub)}
+        </p>
+      )}
     </div>
   );
 }
@@ -165,7 +170,7 @@ export default function Page() {
       {/* 고정 메뉴 */}
       <nav className="sticky top-0 z-40 h-[52px] md:h-[60px] bg-[#f5f0ed]/90 backdrop-blur border-b border-timetable-card-border">
         <div className="mx-auto max-w-[1180px] h-full px-3 md:px-6 flex items-center gap-3">
-          <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="font-[BagelFat] text-primary text-lg md:text-xl">
+          <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} data-edit="brand" className="font-[BagelFat] text-primary text-lg md:text-xl">
             {doc.brand}
           </button>
           <div className="flex-1 flex gap-0.5 md:gap-2 overflow-x-auto scrollbar-hide">
@@ -183,7 +188,9 @@ export default function Page() {
 
       {/* 1. 첫 화면 */}
       <header className="relative overflow-hidden">
-        <div className="bg-ink text-white text-center text-[13px] md:text-sm font-semibold py-2">{doc.hero.strip}</div>
+        <div className="bg-ink text-white text-center text-[13px] md:text-sm font-semibold py-2">
+          <span data-edit="hero.strip">{doc.hero.strip}</span>
+        </div>
         <Hero>
           <div className="relative pt-5 md:pt-6 pb-10 md:pb-14 flex gap-2 justify-center">
             <button type="button" onClick={() => go("price")} className="h-11 px-5 rounded-full bg-primary text-white font-bold">
@@ -201,15 +208,19 @@ export default function Page() {
         <div className="mx-auto max-w-[1180px]">
           <SectionHead kicker="WHY TEMIS" title="이미지 한 장이 아니라 *매주 쓰는 시간표*" />
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-            {doc.benefits.map((b) => {
+            {doc.benefits.map((b, i) => {
               const Icon = BENEFIT_ICON[b.icon as keyof typeof BENEFIT_ICON];
               return (
                 <div key={b.title} className="rounded-2xl bg-[#f5f0ed] p-4 md:p-5">
-                  <span className="grid place-items-center w-10 h-10 rounded-xl bg-primary/15 text-primary">
+                  <span data-edit={`benefits.${i}.icon`} className="grid place-items-center w-10 h-10 rounded-xl bg-primary/15 text-primary">
                     <Icon size={20} strokeWidth={2.4} />
                   </span>
-                  <h3 className="mt-3 font-bold text-[15px] md:text-base">{b.title}</h3>
-                  <p className="mt-1 text-[13px] md:text-sm text-ink/70 leading-relaxed">{b.body}</p>
+                  <h3 data-edit={`benefits.${i}.title`} className="mt-3 font-bold text-[15px] md:text-base">
+                    {b.title}
+                  </h3>
+                  <p data-edit={`benefits.${i}.body`} className="mt-1 text-[13px] md:text-sm text-ink/70 leading-relaxed">
+                    {b.body}
+                  </p>
                 </div>
               );
             })}
@@ -220,7 +231,7 @@ export default function Page() {
       {/* 3. 작업물 */}
       <section id="works" className="scroll-mt-[52px] md:scroll-mt-[60px] py-12 md:py-16">
         <div className="mx-auto max-w-[1180px] px-4">
-          <SectionHead kicker="WORKS" title={doc.works.title.replace("{숫자}", doc.works.count)} sub={doc.works.sub} />
+          <SectionHead kicker="WORKS" title={doc.works.title.replace("{숫자}", doc.works.count)} sub={doc.works.sub} edit={{ title: "works.title", sub: "works.sub" }} />
         </div>
         {/* 톡피 상세페이지 갤러리처럼: 가로로 넘기고(폰은 손가락), 카드는 번갈아 살짝 기울인다 */}
         <div className="relative mx-auto max-w-[1280px]">
@@ -238,13 +249,17 @@ export default function Page() {
                   i % 2 ? "rotate-[1.2deg]" : "-rotate-[1.2deg]"
                 )}
               >
-                <span className="relative block overflow-hidden rounded-xl aspect-video bg-timetable-card-bg">
+                <span data-edit={`works.items.${i % doc.works.items.length}.src`} className="relative block overflow-hidden rounded-xl aspect-video bg-timetable-card-bg">
                   <img src={workSrc(w.src, "s")} alt={w.title} loading="lazy" draggable={false} className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform" />
                   <ZoomIn size={18} className="absolute right-2 top-2 text-white drop-shadow" />
                 </span>
                 <span className="flex items-center gap-2 px-1.5 pt-2 pb-1">
-                  <span className="rounded-full bg-primary/15 text-primary text-[11px] font-bold px-2 py-0.5">{CAT_LABEL[w.cat]}</span>
-                  <span className="text-[13px] md:text-sm font-semibold truncate">{w.title}</span>
+                  <span data-edit={`works.items.${i % doc.works.items.length}.cat`} className="rounded-full bg-primary/15 text-primary text-[11px] font-bold px-2 py-0.5">
+                    {CAT_LABEL[w.cat]}
+                  </span>
+                  <span data-edit={`works.items.${i % doc.works.items.length}.title`} className="text-[13px] md:text-sm font-semibold truncate">
+                    {w.title}
+                  </span>
                 </span>
               </button>
             ))}
@@ -271,7 +286,7 @@ export default function Page() {
       <section id="demo" className="scroll-mt-[52px] md:scroll-mt-[60px] bg-white py-12 md:py-16 md:px-4">
         <div className="mx-auto max-w-[1180px]">
           <div className="px-4 md:px-0">
-            <SectionHead kicker="TRY IT" title={doc.demo.title} sub={doc.demo.sub} />
+            <SectionHead kicker="TRY IT" title={doc.demo.title} sub={doc.demo.sub} edit={{ title: "demo.title", sub: "demo.sub" }} />
           </div>
           <div className="rounded-none md:rounded-3xl bg-[#f5f0ed] md:p-6">
             <DemoZone embedded />
@@ -299,7 +314,7 @@ export default function Page() {
         est={est}
         revisions={revisions}
         period={pricing.period}
-        head={<SectionHead kicker="PRICE" title="구성을 골라 보세요" sub={`작업 기간은 ${pricing.period}예요.`} />}
+        head={<SectionHead kicker="PRICE" title="구성을 골라 보세요" sub={`작업 기간은 ${pricing.period}예요.`} edit={{ sub: "pricing.period" }} />}
       />
 
       {/* 6. 일정 (시트가 없으면 숨김) */}
@@ -312,9 +327,15 @@ export default function Page() {
           <ol className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {doc.process.map((s, i) => (
               <li key={s.title} className="rounded-2xl bg-white p-4 shadow-sm">
-                <span className="font-[BagelFat] text-primary text-xl">{String(i + 1).padStart(2, "0")}</span>
-                <b className="block mt-1">{s.title}</b>
-                <p className="mt-1 text-[13px] text-ink/70 leading-relaxed">{s.body.replace("{횟수}", String(revisions))}</p>
+                <span data-edit="process" className="font-[BagelFat] text-primary text-xl">
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <b data-edit={`process.${i}.title`} className="block mt-1">
+                  {s.title}
+                </b>
+                <p data-edit={`process.${i}.body`} className="mt-1 text-[13px] text-ink/70 leading-relaxed">
+                  {s.body.replace("{횟수}", String(revisions))}
+                </p>
               </li>
             ))}
           </ol>
@@ -326,16 +347,24 @@ export default function Page() {
         <div className="mx-auto max-w-[860px]">
           <SectionHead kicker="NOTICE" title="신청 전에 꼭 읽어 주세요" />
           <div className="space-y-2">
-            {doc.notice.map((n) => (
+            {doc.notice.map((n, i) => (
               <details key={n.title} open={n.must} className="group rounded-xl bg-[#f5f0ed] px-4 py-3">
                 <summary className="flex items-center gap-2 cursor-pointer list-none font-bold">
-                  {n.must && <span className="rounded bg-primary text-white text-[11px] px-1.5 py-0.5">필독</span>}
-                  <span className="flex-1">{n.title}</span>
+                  {n.must && (
+                    <span data-edit={`notice.${i}.must`} className="rounded bg-primary text-white text-[11px] px-1.5 py-0.5">
+                      필독
+                    </span>
+                  )}
+                  <span className="flex-1">
+                    <span data-edit={`notice.${i}.title`}>{n.title}</span>
+                  </span>
                   <ChevronDown size={18} className="text-ink/50 transition-transform group-open:rotate-180" />
                 </summary>
                 <ul className="mt-2 space-y-1 text-[14px] text-ink/75 leading-relaxed list-disc pl-5">
-                  {n.items.map((it) => (
-                    <li key={it}>{it}</li>
+                  {n.items.map((it, j) => (
+                    <li key={it} data-edit={`notice.${i}.items.${j}`}>
+                      {it}
+                    </li>
                   ))}
                 </ul>
               </details>
@@ -368,12 +397,13 @@ export default function Page() {
             {doc.form.fields.filter(visible).map((f) => (
               <label key={f.id} className="block">
                 <span className="text-sm font-bold">
-                  {f.label}
+                  <span data-edit={`form.fields.${doc.form.fields.indexOf(f)}.label`}>{f.label}</span>
                   {f.required && <span className="text-primary"> *</span>}
                 </span>
                 {f.type === "longtext" ? (
                   <textarea
                     id={`f-${f.id}`}
+                    data-edit={`form.fields.${doc.form.fields.indexOf(f)}.placeholder`}
                     rows={3}
                     value={form[f.id] ?? ""}
                     placeholder={f.placeholder}
@@ -383,6 +413,7 @@ export default function Page() {
                 ) : (
                   <input
                     id={`f-${f.id}`}
+                    data-edit={`form.fields.${doc.form.fields.indexOf(f)}.placeholder`}
                     type={f.type === "number" ? "number" : f.type === "date" ? "date" : "text"}
                     inputMode={f.type === "number" ? "numeric" : undefined}
                     value={form[f.id] ?? ""}
@@ -393,7 +424,9 @@ export default function Page() {
                 )}
               </label>
             ))}
-            <p className="text-[13px] text-ink/60">📎 {doc.form.attachNote}</p>
+            <p className="text-[13px] text-ink/60">
+              📎 <span data-edit="form.attachNote">{doc.form.attachNote}</span>
+            </p>
             <div className="flex gap-2">
               <button type="button" onClick={copy} className="flex-1 h-12 rounded-full bg-primary text-white font-bold flex items-center justify-center gap-1.5">
                 <Copy size={18} /> 양식 복사
@@ -413,7 +446,9 @@ export default function Page() {
         </div>
       </section>
 
-      <footer className="pb-10 text-center text-[12px] text-ink/40">© {doc.brand}</footer>
+      <footer className="pb-10 text-center text-[12px] text-ink/40">
+        © <span data-edit="brand">{doc.brand}</span>
+      </footer>
 
       {/* 작업물 크게 보기 */}
       {zoomed && (
