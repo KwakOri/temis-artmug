@@ -1,4 +1,5 @@
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css");
+@import url("https://cdn.jsdelivr.net/gh/wan2land/d2coding/d2coding-subset.css");
 @import "./card/fonts.css";
 @import "tailwindcss";
 
@@ -58,4 +59,62 @@ button {
   .card-flash {
     animation: none;
   }
+}
+
+/* 후기·작업물 벽이 흐르는 띠: 같은 묶음 두 개를 -50%까지 흘린다 */
+.marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee var(--dur, 40s) linear infinite;
+}
+.marquee-rev {
+  animation-direction: reverse;
+}
+.marquee-row:hover .marquee {
+  animation-play-state: paused;
+}
+@keyframes marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .marquee {
+    animation: none;
+  }
+  .marquee-row {
+    overflow-x: auto;
+    -webkit-mask-image: none;
+    mask-image: none;
+    padding-inline: 1rem;
+  }
+  .marquee-dup {
+    display: none;
+  }
+}
+
+/* 숫자·영수증 글꼴 */
+.mono {
+  font-family: "D2Coding", ui-monospace, monospace;
+}
+
+/* 견적 영수증: 아래 톱니 가장자리와 장식 바코드 */
+.receipt-edge {
+  height: 12px;
+  background:
+    linear-gradient(135deg, #fffdf9 6px, transparent 0) 0 0 / 12px 12px repeat-x,
+    linear-gradient(225deg, #fffdf9 6px, transparent 0) 0 0 / 12px 12px repeat-x;
+}
+.barcode {
+  background: repeating-linear-gradient(
+    90deg,
+    #1b1612 0 2px,
+    transparent 2px 4px,
+    #1b1612 4px 5px,
+    transparent 5px 7px,
+    #1b1612 7px 10px,
+    transparent 10px 11px,
+    #1b1612 11px 12px,
+    transparent 12px 15px
+  );
 }

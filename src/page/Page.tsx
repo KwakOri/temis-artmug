@@ -1,12 +1,14 @@
 // Temis 아트머그 상세페이지. 칸 순서·문구는 PLANS/TEMIS_ARTMUG_PAGE.md 4절, 값은 data.ts.
-import { Check, ChevronDown, ChevronLeft, ChevronRight, Copy, Heart, Pencil, RotateCcw, Smartphone, Users, X, ZoomIn } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, Copy, Heart, Pencil, RotateCcw, Smartphone, Users, X, ZoomIn } from "lucide-react";
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import DemoZone from "../DemoZone";
 import Hero from "./Hero";
 import { cn } from "../lib/utils";
 import { doc, type FormField, type PlanId } from "./data";
 import { readPending } from "./remote";
-import { estimate, optionPriceLabel, won } from "./pricing";
+import { estimate, won } from "./pricing";
+import Price from "./Price";
+import Reviews from "./Reviews";
 import Slots from "./Slots";
 
 const BASE = import.meta.env.BASE_URL;
@@ -277,101 +279,28 @@ export default function Page() {
         </div>
       </section>
 
-      {/* 4. 후기 */}
-      <section className="py-12 md:py-16 px-4">
-        <div className="mx-auto max-w-[1180px]">
-          <SectionHead kicker="REVIEW" title="먼저 써 본 분들의 이야기" />
-          <div className="grid md:grid-cols-2 gap-3 md:gap-4">
-            {doc.reviews.map((r) => (
-              <figure key={r.quote} className="rounded-2xl bg-white p-5 md:p-6 shadow-sm">
-                <blockquote className="font-bold text-[15px] md:text-base leading-snug">“{r.quote}”</blockquote>
-                <p className="mt-3 text-[13px] md:text-sm text-ink/65 leading-relaxed">{rich(r.body)}</p>
-              </figure>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* 4. 후기: 글만 흐르는 두 줄 + 뒤에 작업물 벽 */}
+      <Reviews
+        reviews={doc.reviews}
+        thumbs={doc.works.items.map((w) => workSrc(w.src, "s"))}
+        caption={doc.works.items.length ? `뒤에 흐르는 시간표는 ${doc.works.count}의 스트리머와 만든 작업물 일부예요` : ""}
+        head={<SectionHead kicker="REVIEW" title="먼저 써 본 분들의 이야기" />}
+      />
 
-      {/* 5. 가격 */}
-      <section id="price" className="scroll-mt-[52px] md:scroll-mt-[60px] bg-white py-12 md:py-16 px-4">
-        <div className="mx-auto max-w-[1180px]">
-          <SectionHead kicker="PRICE" title="구성을 골라 보세요" sub={`작업 기간은 ${pricing.period}예요.`} />
-          <div className="grid md:grid-cols-3 gap-3 md:gap-4">
-            {pricing.plans.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                aria-pressed={planId === p.id}
-                onClick={() => setPlanId(p.id)}
-                className={cn(
-                  "relative text-left rounded-2xl p-5 border-2 transition-colors",
-                  planId === p.id ? "border-primary bg-primary/5" : "border-timetable-card-border bg-white hover:border-primary/50"
-                )}
-              >
-                {p.badge && <span className="absolute -top-3 right-4 rounded-full bg-primary text-white text-xs font-bold px-2.5 py-1">{p.badge}</span>}
-                <span className="flex items-center justify-between">
-                  <span className="font-bold text-lg">{p.name}</span>
-                  <span className={cn("grid place-items-center w-6 h-6 rounded-full border-2", planId === p.id ? "bg-primary border-primary text-white" : "border-timetable-card-border")}>
-                    {planId === p.id && <Check size={14} strokeWidth={3} />}
-                  </span>
-                </span>
-                <span className="block mt-1 text-2xl font-extrabold">{won(p.price)}</span>
-                <span className="block mt-2 text-[13px] text-ink/70">{p.desc}</span>
-                <ul className="mt-3 space-y-1">
-                  {p.points.map((pt) => (
-                    <li key={pt} className="flex items-center gap-1.5 text-[13px]">
-                      <Check size={14} className="text-primary" /> {pt}
-                    </li>
-                  ))}
-                </ul>
-              </button>
-            ))}
-          </div>
-
-          <h3 className="mt-8 mb-3 font-bold text-lg">추가 옵션</h3>
-          <div className="grid md:grid-cols-2 gap-2">
-            {pricing.options.map((o) => {
-              const on = picked.has(o.id);
-              return (
-                <button
-                  key={o.id}
-                  type="button"
-                  aria-pressed={on}
-                  onClick={() => toggleOption(o.id)}
-                  className={cn(
-                    "flex items-start gap-3 text-left rounded-xl p-3.5 border-2 transition-colors",
-                    on ? "border-primary bg-primary/5" : "border-timetable-card-border bg-white"
-                  )}
-                >
-                  <span className={cn("mt-0.5 grid place-items-center shrink-0 w-5 h-5 rounded-md border-2", on ? "bg-primary border-primary text-white" : "border-timetable-card-border")}>
-                    {on && <Check size={12} strokeWidth={3} />}
-                  </span>
-                  <span className="flex-1">
-                    <span className="flex justify-between gap-2">
-                      <span className="font-bold text-[15px]">{o.name}</span>
-                      <span className={cn("shrink-0 text-sm font-bold", o.value < 0 ? "text-[#2f8f5b]" : "text-primary")}>
-                        {optionPriceLabel(o, o.kind === "percent" ? est.plan : undefined)}
-                      </span>
-                    </span>
-                    <span className="block mt-0.5 text-[13px] text-ink/65">{o.desc}</span>
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="mt-6 rounded-2xl bg-ink text-white p-5 md:flex md:items-end md:justify-between">
-            <div>
-              <p className="text-sm text-white/70">예상 견적 · {est.plan.name}{est.lines.length ? ` + 옵션 ${est.lines.length}개` : ""} · 수정 {revisions}회</p>
-              <p className="mt-1 text-3xl font-extrabold">
-                {won(est.total)}
-                {est.hasAsk && <span className="ml-2 text-base font-bold text-secondary">+ 별도 문의</span>}
-              </p>
-            </div>
-            <p className="mt-2 md:mt-0 text-[13px] text-white/60">최종 금액은 아트머그 결제 화면 기준이에요.</p>
-          </div>
-        </div>
-      </section>
+      {/* 5. 가격: 구성 칩 → 옵션 줄 → 영수증 */}
+      <Price
+        brand={doc.brand}
+        plans={pricing.plans}
+        options={pricing.options}
+        planId={planId}
+        setPlanId={setPlanId}
+        picked={picked}
+        toggle={toggleOption}
+        est={est}
+        revisions={revisions}
+        period={pricing.period}
+        head={<SectionHead kicker="PRICE" title="구성을 골라 보세요" sub={`작업 기간은 ${pricing.period}예요.`} />}
+      />
 
       {/* 6. 일정 (시트가 없으면 숨김) */}
       <Slots csvUrl={doc.slots.csvUrl} note={doc.slots.note} head={<SectionHead kicker="SLOT" title="이달의 작업 자리" />} />
