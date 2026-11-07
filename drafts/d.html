@@ -1,0 +1,181 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="robots" content="noindex">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>TEMIS 시안 D · 나이트 스트림</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbit&family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0e0c16;--bg2:#15121f;--panel:#1b1727;--line:#ffffff17;--txt:#f3eee9;--mute:#f3eee999;--pri:#fc712b;--sec:#ffb27f;--vio:#8f7dff}
+body{background:var(--bg);color:var(--txt);font-family:"IBM Plex Sans KR",sans-serif;word-break:keep-all;-webkit-text-size-adjust:100%;line-height:1.6}
+img{display:block;max-width:100%}
+button,input,textarea{font:inherit;color:inherit}button{cursor:pointer}
+details summary{list-style:none;cursor:pointer}details summary::-webkit-details-marker{display:none}
+.mono{font-family:"Space Mono",monospace}
+.wrap{max-width:960px;margin:0 auto;padding:0 28px}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;background:radial-gradient(800px 500px at 85% -5%,#fc712b33,transparent 60%),radial-gradient(700px 500px at -10% 30%,#8f7dff22,transparent 60%);z-index:-1}
+
+.top{position:sticky;top:0;z-index:5;backdrop-filter:blur(12px);background:#0e0c16b3;border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;height:60px}
+.logo{font-family:Orbit;font-size:20px;letter-spacing:.12em;display:flex;align-items:center;gap:10px}
+.logo i{width:8px;height:8px;border-radius:50%;background:var(--pri);box-shadow:0 0 12px var(--pri)}
+.top nav{display:flex;gap:24px;font-size:13px;font-family:"Space Mono";letter-spacing:.06em}.top nav a{color:var(--mute);text-decoration:none}
+.top .cta{color:#fff!important;background:var(--pri);padding:7px 14px;border-radius:8px;box-shadow:0 0 20px #fc712b66}
+
+.hero{padding:70px 0 30px;text-align:center}
+.live{display:inline-flex;align-items:center;gap:8px;font:700 12px "Space Mono";letter-spacing:.14em;border:1px solid #fc712b66;color:var(--sec);padding:6px 12px;border-radius:999px;background:#fc712b14}
+.live i{width:7px;height:7px;border-radius:50%;background:var(--pri);animation:blink 1.4s infinite}
+@keyframes blink{50%{opacity:.25}}
+h1{font-family:Orbit;font-weight:400;word-spacing:-.12em;font-size:clamp(34px,6.4vw,62px);line-height:1.18;margin:26px 0 18px;letter-spacing:-.01em}
+h1 em{font-style:normal;background:linear-gradient(90deg,var(--pri),var(--sec));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p.lead{color:var(--mute);font-size:17px}
+.act{display:flex;gap:10px;justify-content:center;margin-top:28px}
+.b{display:inline-flex;align-items:center;gap:8px;padding:13px 22px;border-radius:12px;font-weight:700;font-size:15px;text-decoration:none;color:var(--txt);border:1px solid var(--line);background:#ffffff0a}
+.b.pri{background:linear-gradient(180deg,#ff8540,#fc712b);border-color:transparent;color:#fff;box-shadow:0 10px 30px -8px #fc712bb0}
+.screen{position:relative;margin:56px auto 0;max-width:860px;border-radius:18px;padding:10px;background:linear-gradient(180deg,#ffffff1f,#ffffff05);border:1px solid var(--line);box-shadow:0 40px 100px -30px #fc712b80}
+.screen img{border-radius:10px}
+.screen .bar{display:flex;justify-content:space-between;font:12px "Space Mono";color:var(--mute);padding:4px 6px 10px}
+.screen .bar b{color:var(--pri)}
+.chips{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-width:860px;margin:18px auto 0}
+.chip{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;text-align:left}
+.chip small{font:11px "Space Mono";letter-spacing:.1em;color:var(--mute)}.chip b{display:block;font-size:18px;margin-top:4px}
+.chip.hot b{color:var(--sec)}
+
+.sec{padding:110px 0 0}
+.sh{margin-bottom:36px}
+.sh small{font:700 12px "Space Mono";letter-spacing:.18em;color:var(--pri)}
+.sh small::before{content:"// "}
+h2{font-family:Orbit;font-weight:400;word-spacing:-.12em;font-size:clamp(26px,4.2vw,38px);line-height:1.25;margin-top:10px}
+.sh p{color:var(--mute);margin-top:10px;font-size:15px}
+
+.ben{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.ben div{background:linear-gradient(180deg,var(--panel),var(--bg2));border:1px solid var(--line);border-radius:16px;padding:22px 20px 24px;position:relative;overflow:hidden}
+.ben div::after{content:"";position:absolute;left:20px;right:20px;top:0;height:1px;background:linear-gradient(90deg,transparent,var(--pri),transparent);opacity:.7}
+.ben em{font:700 12px "Space Mono";color:var(--pri);font-style:normal}
+.ben b{display:block;font-size:18px;margin:16px 0 8px}.ben p{font-size:14px;color:var(--mute)}
+
+.demo{display:grid;grid-template-columns:1fr 1.5fr;gap:28px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:30px}
+.demo img{border-radius:12px;border:1px solid var(--line)}
+.demo ul{list-style:none;margin-top:18px;display:grid;gap:10px;font-size:14.5px;color:var(--mute)}
+.demo li::before{content:"▸ ";color:var(--pri)}
+
+.seg{display:inline-flex;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:4px;margin-bottom:20px}
+.seg button{border:0;background:none;padding:8px 16px;border-radius:9px;font-size:14px;font-weight:600;color:var(--mute)}
+.seg button.on{background:var(--pri);color:#fff;box-shadow:0 0 18px #fc712b66}
+.gal{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.gal figure{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;transition:transform .2s,box-shadow .2s}
+.gal img{aspect-ratio:16/9;object-fit:cover;width:100%}
+.gal figure:hover{transform:translateY(-3px);box-shadow:0 20px 40px -20px #fc712b99;border-color:#fc712b55}
+.gal figcaption{display:flex;justify-content:space-between;padding:11px 14px;font-size:13.5px;font-weight:600}
+.gal figcaption span{font:11px "Space Mono";color:var(--sec);border:1px solid #ffb27f44;border-radius:6px;padding:1px 6px}
+
+.chat{background:var(--panel);border:1px solid var(--line);border-radius:20px;overflow:hidden}
+.chat .hd{display:flex;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--line);font:12px "Space Mono";color:var(--mute)}
+.chat .hd b{color:var(--txt)}
+.msgs{padding:10px 20px 18px;display:grid;gap:4px}
+.msg{padding:12px 0;border-bottom:1px dashed var(--line);font-size:15px}
+.msg:last-child{border:0}
+.msg .who{font-weight:700;margin-right:8px}.msg .who.c1{color:var(--sec)}.msg .who.c2{color:var(--vio)}.msg .who.c3{color:#6be3b5}.msg .who.c4{color:#ff8fb1}
+.msg q{quotes:none;font-weight:600}.msg p{color:var(--mute);font-size:13.5px;margin-top:4px}
+.msg .dn{font:10.5px "Space Mono";color:#fff;background:var(--pri);border-radius:4px;padding:1px 5px;margin-right:6px;vertical-align:2px}
+
+.plans{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.plan{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px;cursor:pointer;transition:border-color .2s,box-shadow .2s}
+.plan input{position:absolute;opacity:0}
+.plan:has(input:checked){border-color:var(--pri);box-shadow:0 0 0 1px var(--pri),0 20px 50px -20px #fc712baa;background:linear-gradient(180deg,#fc712b1a,var(--panel))}
+.plan small{font:11px "Space Mono";color:var(--mute);letter-spacing:.1em}
+.plan b{display:block;font-size:19px;margin:8px 0 6px}.plan p{font-size:13.5px;color:var(--mute);min-height:44px}
+.plan .pr{font-family:Orbit;font-size:24px;margin-top:14px;display:block}
+.plan .bdg{position:absolute;top:16px;right:16px;font:700 10.5px "Space Mono";background:var(--pri);color:#fff;border-radius:6px;padding:2px 7px}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.opt{display:flex;gap:14px;align-items:center;background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:14px 16px;cursor:pointer}
+.opt input{appearance:none;flex:none;width:38px;height:22px;border-radius:999px;background:#ffffff1f;position:relative;transition:background .2s}
+.opt input::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .2s}
+.opt input:checked{background:var(--pri)}.opt input:checked::after{transform:translateX(16px)}
+.opt span{flex:1;font-weight:600;font-size:14.5px}.opt small{display:block;font-weight:400;font-size:12.5px;color:var(--mute);margin-top:2px}
+.opt em{font:700 12px "Space Mono";font-style:normal;color:var(--sec);white-space:nowrap}
+.total{margin-top:14px;display:flex;justify-content:space-between;align-items:center;border-radius:16px;padding:22px 24px;background:linear-gradient(90deg,#fc712b,#ff9a4d);color:#fff}
+.total small{font:700 11px "Space Mono";letter-spacing:.12em;opacity:.85}.total div>span{display:block;font-size:14px;font-weight:600;margin-top:4px}
+.total b{font-family:Orbit;font-size:clamp(26px,4.6vw,38px);font-weight:400}
+
+.slots{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.slot{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px 22px}
+.slot .r{display:flex;justify-content:space-between;align-items:baseline}
+.slot b{font-family:Orbit;font-size:24px;font-weight:400}.slot span{font-size:13.5px;color:var(--mute)}.slot span i{font-style:normal;color:var(--sec);font-weight:700}
+.meter{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:16px}
+.meter i{height:8px;border-radius:4px;background:#ffffff1a}.meter i.full{background:var(--pri);box-shadow:0 0 10px #fc712b88}
+
+.tl{position:relative;display:grid;gap:0;padding-left:34px}
+.tl::before{content:"";position:absolute;left:9px;top:8px;bottom:8px;width:2px;background:linear-gradient(var(--pri),var(--vio))}
+.tl div{position:relative;padding:0 0 26px}
+.tl div::before{content:"";position:absolute;left:-30px;top:6px;width:12px;height:12px;border-radius:50%;background:var(--bg);border:2px solid var(--pri);box-shadow:0 0 10px var(--pri)}
+.tl em{font:700 11.5px "Space Mono";color:var(--pri);font-style:normal}.tl b{font-size:17px;margin-left:10px}.tl p{color:var(--mute);font-size:14px;margin-top:4px}
+
+.notes{display:grid;gap:8px}
+.notes details{background:var(--panel);border:1px solid var(--line);border-radius:14px}
+.notes details[open]{border-color:#fc712b44}
+.notes summary{display:flex;align-items:center;gap:12px;padding:16px 20px;font-weight:600}
+.notes summary em{font:700 11.5px "Space Mono";color:var(--mute);font-style:normal}
+.notes summary::after{content:"+";margin-left:auto;font:18px "Space Mono";color:var(--pri)}.notes details[open] summary::after{content:"−"}
+.notes ul{padding:0 22px 18px 52px;color:var(--mute);font-size:14.5px}
+.must{font:700 10.5px "Space Mono";color:#fff;background:var(--pri);border-radius:5px;padding:1px 6px}
+
+.form{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:28px;display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.fld{display:grid;gap:8px;font-size:13px;font-weight:600;color:var(--mute)}.fld.wide{grid-column:1/-1}.fld i{color:var(--pri);font-style:normal}
+.fld input,.fld textarea{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:15px;color:var(--txt);width:100%;resize:vertical;color-scheme:dark}
+.fld input:focus,.fld textarea:focus{outline:0;border-color:var(--pri);box-shadow:0 0 0 3px #fc712b33}
+.send{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;gap:14px;border-top:1px solid var(--line);padding-top:20px}
+.send p{font-size:13.5px;color:var(--mute)}.send p b{color:var(--txt)}
+.foot{padding:100px 0 40px;text-align:center;font:12px "Space Mono";color:#f3eee955;letter-spacing:.2em}
+@media(max-width:720px){.wrap{padding:0 18px}h1{font-size:29px}.top nav a:not(.cta){display:none}.chips{grid-template-columns:1fr 1fr}.ben{grid-template-columns:1fr 1fr}.demo{grid-template-columns:1fr;padding:20px}
+.gal{grid-template-columns:1fr 1fr}.plans,.opts,.slots,.form{grid-template-columns:1fr}.plan p{min-height:0}.hero{padding-top:44px}.sec{padding-top:80px}.form{padding:20px}.send{flex-direction:column;align-items:stretch;text-align:center}}
+@media(max-width:420px){.ben,.gal{grid-template-columns:1fr}}
+</style></head><body>
+<header class="top"><div class="wrap"><span class="logo"><i></i>TEMIS</span><nav><a href="#works">WORKS</a><a href="#price">PRICE</a><a href="#notice">NOTICE</a><a class="cta" href="#form">신청하기</a></nav></div></header>
+<main class="wrap">
+<section class="hero">
+  <span class="live"><i></i>NOW ACCEPTING · 11월 1자리</span>
+  <h1>매주 포토샵 켜지 않아도 되는<br><em>방송 시간표</em></h1>
+  <p class="lead">버튜버를 위한 맞춤 주간 시간표예요. 요일 칸만 채우면 PC와 폰에서 바로 완성돼요.</p>
+  <div class="act"><a class="b" href="#price">가격 보기</a><a class="b pri" href="#form">신청 양식 →</a></div>
+  <div class="screen"><div class="bar"><span><b>●</b> PREVIEW · weekly_schedule</span><span>1920×1080</span></div><img src="img/hero-tt.webp" alt="TEMIS 시간표 예시"></div>
+  <div class="chips"><div class="chip"><small>STARTS AT</small><b>80,000원~</b></div><div class="chip"><small>PERIOD</small><b>시작 후 2주</b></div><div class="chip"><small>REVISION</small><b>기본 3회</b></div><div class="chip hot"><small>NOVEMBER</small><b>1자리 남음</b></div></div>
+</section>
+
+<section class="sec"><div class="sh"><small>WHY TEMIS</small><h2>이미지 한 장이 아니라, 매주 쓰는 시간표</h2></div>
+  <div class="ben"><div><em>01</em><b>칸만 채우면 끝</b><p>레이어를 찾아 고칠 필요 없이 방송 정보만 적으면 돼요.</p></div><div><em>02</em><b>폰에서도 수정</b><p>침대에서도 이번 주 일정을 바로 바꿀 수 있어요.</p></div><div><em>03</em><b>팀 일정 자동 취합</b><p>팀 시간표는 팀원이 저장한 일정이 알아서 모여요.</p></div><div><em>04</em><b>버튜버가 만든 시간표</b><p>직접 방송하며 불편했던 점을 풀려고 만들었어요.</p></div></div></section>
+
+<section class="sec"><div class="sh"><small>HOW IT WORKS</small><h2>요일 칸에 적으면, 시간표가 바뀌어요</h2></div>
+  <div class="demo"><div><b style="font-size:18px">이번 주 일정만 적어 주세요</b><ul><li>방송 제목·시간을 칸에 적어요</li><li>휴방은 버튼 하나로 바꿔요</li><li>다 적으면 이미지로 저장해요</li></ul></div><img src="img/demo.webp" alt="입력 칸과 시간표 카드" loading="lazy"></div></section>
+
+<section class="sec" id="works"><div class="sh"><small>SELECTED WORKS</small><h2>이렇게 만들어 드렸어요</h2></div>
+  <div data-tabs><div class="seg"><button class="on" data-tab="all">전체</button><button data-tab="structured">정형</button><button data-tab="unstructured">비정형</button><button data-tab="team">팀</button></div>
+  <div class="gal"><figure data-cat="structured"><img src="../works/3-structured-l.webp" alt="" loading="lazy"><figcaption>히르님<span>정형</span></figcaption></figure><figure data-cat="structured"><img src="../works/4-structured-l.webp" alt="" loading="lazy"><figcaption>올뺌이님<span>정형</span></figcaption></figure><figure data-cat="structured"><img src="../works/5-structured-l.webp" alt="" loading="lazy"><figcaption>아인즈님<span>정형</span></figcaption></figure><figure data-cat="structured"><img src="../works/6-structured-l.webp" alt="" loading="lazy"><figcaption>베루밍님<span>정형</span></figcaption></figure><figure data-cat="structured"><img src="../works/7-structured-l.webp" alt="" loading="lazy"><figcaption>버찌님<span>정형</span></figcaption></figure><figure data-cat="unstructured"><img src="../works/8-unstructured-l.webp" alt="" loading="lazy"><figcaption>다르님<span>비정형</span></figcaption></figure><figure data-cat="team"><img src="../works/0-team-l.webp" alt="" loading="lazy"><figcaption>LUCENT<span>팀</span></figcaption></figure><figure data-cat="team"><img src="../works/1-team-l.webp" alt="" loading="lazy"><figcaption>비정상스튜디오<span>팀</span></figcaption></figure><figure data-cat="team"><img src="../works/2-team-l.webp" alt="" loading="lazy"><figcaption>IRIS<span>팀</span></figcaption></figure></div></div></section>
+
+<section class="sec"><div class="sh"><small>REVIEWS</small><h2>받아 본 분들의 채팅</h2></div>
+  <div class="chat"><div class="hd"><b>💬 후기 채팅</b><span>아트머그 후기에서 옮겼어요</span></div><div class="msgs">
+    <div class="msg"><span class="who c1">구매자 A</span><q>이제 포토샵 켜서 하나하나 월요일...화요일...이러고 레이어 안 찾아도 되어서 너무 편해ㅠㅠ</q><p>내가 가득가득 찬 디자인을 좋아해서 가득 차 보이게 해주세요! 했는데 완 벽 천 재 바로바로 수정하는 것도 편하고 컨셉에 맞게 예쁘게 잘 나온 것 같아!</p></div>
+    <div class="msg"><span class="who c2">구매자 B</span><q>모바일에서도 수정이 편리해서 좋더라구요!</q><p>일정 변동도 잦고 포토샵 사용이 서툴러서 이때까지는 주간 일정표 없이 당일 공지하다가, 처음으로 주간 일정표를 만들어봤어요ㅎ 오마카세 신청했더니 너무 예쁘게 디자인해주셨어요.</p></div>
+    <div class="msg"><span class="who c3">구매자 C</span><q>기술면, 편리성면에서는 PC가 아니라 모바일로도 된다는게 진짜 대박이라니까...</q><p>나 같은 기계치는 포토샵도 못하는데 얘는 그냥 정해진 빈칸에 적으먄 알아서 스케줄로 들어가는게...진짜 떼끄놀로지아</p></div>
+    <div class="msg"><span class="who c4">구매자 D</span><q>팀이나 크루 활동하시는 분들에게 엄청 좋을 것 같아요!</q><p>기존에는 클튜로 하나하나 간격 맞춰주고 해야 했는데 이제는 글자만 적으면 되니 너무 편해요 저의 일정을 저장하기만 하면 자동으로 단체 스케쥴표에도 입력되어서요.</p></div>
+  </div></div></section>
+
+<section class="sec" id="price"><div class="sh"><small>PRICE</small><h2>구성과 옵션</h2><p>고르면 아래 예상 견적이 바로 바뀌어요. 최종 금액은 아트머그 결제 화면 기준이에요.</p></div>
+  <div class="plans"><label class="plan"><input type="radio" name="plan" value="structured"><small>TYPE 01</small><b>정형 시간표</b><p>깔끔한 구조로 한눈에 잘 보이는 기본형이에요.</p><span class="pr">80,000원</span></label><label class="plan"><input type="radio" name="plan" value="unstructured" checked><span class="bdg">추천</span><small>TYPE 02</small><b>비정형 시간표</b><p>독특한 배치와 화려한 연출로 개성을 살려요.</p><span class="pr">100,000원</span></label><label class="plan"><input type="radio" name="plan" value="team"><small>TYPE 03</small><b>팀 시간표</b><p>팀 일정을 통일된 디자인으로 한 장에 모아요.</p><span class="pr">120,000원</span></label></div>
+  <div class="opts"><label class="opt"><input type="checkbox" data-opt="fast"><span>빠른 마감<small>일주일 안에 받아요. 고른 구성의 기본가만큼 추가돼요.</small></span><em>+100%</em></label><label class="opt"><input type="checkbox" data-opt="multi"><span>하루 여러 방송<small>하루에 방송을 두 번 이상 적을 수 있게 만들어요.</small></span><em>무료</em></label><label class="opt"><input type="checkbox" data-opt="offmemo"><span>휴방 메모<small>휴방 칸에 짧은 메모를 적을 수 있어요.</small></span><em>무료</em></label><label class="opt"><input type="checkbox" data-opt="weekmemo"><span>주간 메모<small>이번 주 공지를 적는 칸을 넣어요.</small></span><em>무료</em></label><label class="opt"><input type="checkbox" data-opt="omakase"><span>오마카세<small>디자인을 맡겨 주세요. 진행이 빨라지는 대신 수정은 1회예요.</small></span><em>무료</em></label><label class="opt"><input type="checkbox" data-opt="private"><span>포트폴리오 비공개<small>완성작을 포트폴리오로 공개하지 않아요.</small></span><em>+10,000원</em></label><label class="opt"><input type="checkbox" data-opt="review"><span>후기 이벤트<small>완성 뒤 아트머그에 후기를 남겨 주시면 할인해 드려요.</small></span><em>−10,000원</em></label><label class="opt"><input type="checkbox" data-opt="extra"><span>배경 전환·스티커<small>움직이는 배경이나 스티커는 문의 때 따로 견적을 드려요.</small></span><em>별도 문의</em></label></div>
+  <div class="total"><div><small>ESTIMATE</small><span><span data-plan-name></span> · <span data-rev></span></span></div><b data-total></b></div></section>
+
+<section class="sec"><div class="sh"><small>SCHEDULE</small><h2>작업 자리</h2><p>결제 확인 순서대로 작업해요. 남은 자리는 문의 때 다시 확인해 드려요.</p></div>
+  <div class="slots"><div class="slot"><div class="r"><b>11월</b><span>접수 중 · <i>1/4</i> 남음</span></div><div class="meter"><i class="full"></i><i class="full"></i><i class="full"></i><i></i></div></div><div class="slot"><div class="r"><b>12월</b><span>11/20 오픈 · <i>4/4</i> 남음</span></div><div class="meter"><i></i><i></i><i></i><i></i></div></div></div></section>
+
+<section class="sec"><div class="sh"><small>PROCESS</small><h2>이렇게 진행돼요</h2></div>
+  <div class="tl"><div><em>STEP 01</em><b>신청</b><p>아래 양식을 복사해 아트머그 「작가에게 문의」로 보내 주세요.</p></div><div><em>STEP 02</em><b>견적·결제</b><p>구성과 금액을 확인해 드리면 아트머그에서 결제해 주세요.</p></div><div><em>STEP 03</em><b>레퍼런스 확인</b><p>보내 주신 캐릭터·참고 자료를 보고 방향을 잡아요.</p></div><div><em>STEP 04</em><b>디자인 시안</b><p>방향에 맞춰 디자인 시안을 보내 드려요.</p></div><div><em>STEP 05</em><b>수정</b><p>기본 3회예요. 고칠 곳을 모아서 알려 주세요.</p></div><div><em>STEP 06</em><b>시간표 제작</b><p>확정된 디자인으로 칸을 채우는 시간표를 만들어요.</p></div><div><em>STEP 07</em><b>완성·전달</b><p>완성된 시간표와 사용 방법을 안내해 드려요.</p></div></div></section>
+
+<section class="sec" id="notice"><div class="sh"><small>NOTICE</small><h2>신청 전에 꼭 읽어 주세요</h2></div>
+  <div class="notes"><details open><summary><em>01</em>문의 방법 <span class="must">필독</span></summary><ul><li>결제 전에는 아트머그 문의로만 이야기해요. 카카오톡·디스코드·이메일 같은 개인 연락처는 적지 말아 주세요.</li></ul></details><details open><summary><em>02</em>결과물 형태 <span class="must">필독</span></summary><ul><li>이미지 파일 한 장이 아니라, 칸에 글을 넣으면 시간표 이미지가 만들어지는 템플릿으로 드려요.</li><li>사용 방법은 완성 때 안내해 드려요.</li></ul></details><details><summary><em>03</em>준비물</summary><ul><li>캐릭터 이미지(최대 5장)와 참고 디자인은 문의할 때 첨부해 주세요.</li></ul></details><details><summary><em>04</em>오마카세</summary><ul><li>원하는 디자인이 뚜렷하지 않으면 오마카세를 추천해요.</li><li>진행이 빨라지는 대신 수정은 1회예요. 처음부터 다시 만드는 수정은 어려워요.</li></ul></details><details><summary><em>05</em>수정 범위</summary><ul><li>시안 확정 뒤 구조를 바꾸거나 기능을 새로 더하면 추가 비용이 생길 수 있어요.</li></ul></details><details><summary><em>06</em>일정</summary><ul><li>결제 확인 순서대로 시작해요. 자료 전달이나 시안 확인이 늦어지면 일정도 늦어져요.</li></ul></details><details><summary><em>07</em>환불</summary><ul><li>아트머그 규정을 따라요. 시안 작업이 시작된 뒤에는 환불이 어려울 수 있어요.</li></ul></details><details><summary><em>08</em>포트폴리오</summary><ul><li>완성작은 포트폴리오로 공개할 수 있어요. 원하지 않으면 「포트폴리오 비공개」 옵션을 골라 주세요.</li></ul></details><details><summary><em>09</em>이용 범위</summary><ul><li>신청하신 분(팀은 그 팀)의 방송에서 쓸 수 있어요. 되팔기·재배포는 안 돼요.</li></ul></details></div></section>
+
+<section class="sec" id="form"><div class="sh"><small>ORDER FORM</small><h2>신청 양식</h2><p>채운 뒤 복사해서 아트머그 「작가에게 문의」로 보내 주세요.</p></div>
+  <div class="form"><label class="fld wide"><span>시간표에 들어갈 내용 <i>*</i></span><textarea rows="3" placeholder="방송 요일, 하루 방송 횟수, 메모 칸이 필요한지 적어 주세요."></textarea></label><label class="fld wide"><span>원하는 분위기·색·키워드 <i>*</i></span><textarea rows="3" placeholder="예) 파스텔 하늘색, 바다, 귀여운 느낌"></textarea></label><label class="fld"><span>첫 사용 희망일</span><input type="date"></label>
+  <div class="send"><p><b data-plan-name></b> · <b data-total></b><br>캐릭터·참고 이미지는 아트머그 문의 창에 첨부해 주세요.</p><a class="b pri" href="#">양식 복사</a></div></div></section>
+</main>
+<p class="foot">TEMIS · WEEKLY SCHEDULE</p>
+<script src="drafts.js"></script>
+</body></html>
