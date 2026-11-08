@@ -1,6 +1,6 @@
 {
   "name": "@artmug/editor",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "아트머그 상세페이지 공통 편집기 엔진: 칸 목록(스키마)을 읽어 /edit 패널·눌러 고치기·사진·깃허브 저장을 만든다",
   "private": true,
   "type": "module",

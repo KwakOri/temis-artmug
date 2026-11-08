@@ -1,7 +1,7 @@
 // 가격 칸: 구성 칩 → 옵션 줄(「□ 이름 …… 금액」) → 감열지 영수증 (#20 견적 1안, A 레트로 기기 톤).
 // 금액은 pricing.ts의 estimate 결과만 쓴다. 신청 양식 복사 글도 같은 결과를 보므로 화면 합계와 복사 금액이 같다.
 // 폰(lg 미만): 가격 칸을 보는 동안 화면 아래에 합계 막대를 고정하고, 영수증이 보이면 숨긴다.
-import { Check, ChevronUp } from "lucide-react";
+import { Check, ChevronUp, Plus, X } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { cn } from "../lib/utils";
 import type { Option, Plan, PlanId } from "./data";
@@ -141,8 +141,8 @@ export default function Price({ brand, plans, options, planId, setPlanId, picked
                 const dim = by.length > 0;
                 const names = by.map((b) => b.name).join("·");
                 return (
-                  <li key={o.id}>
-                    <button type="button" aria-pressed={on} onClick={() => toggle(o.id)} className="w-full text-left py-3">
+                  <li key={o.id} className="flex items-start gap-2">
+                    <button type="button" aria-pressed={on} onClick={() => toggle(o.id)} className="flex-1 min-w-0 text-left py-3">
                       <span className={cn("flex items-center gap-2.5 transition-opacity", dim && "opacity-40")}>
                         <span
                           className={cn(
@@ -171,10 +171,17 @@ export default function Price({ brand, plans, options, planId, setPlanId, picked
                         </span>
                       )}
                     </button>
+                    {/* /edit 「눌러 고치기」에서만 보임(@artmug/editor). 코드에 묶인 옵션은 칸 목록(lists.locked)에서 잠근다 */}
+                    <button type="button" data-edit-remove={`pricing.options.${oi}`} aria-label={`${o.name} 옵션 빼기`} className="mt-3 grid place-items-center shrink-0 w-[26px] h-[26px] rounded-full border-2 border-[#1b1612] bg-white text-[#1b1612] hover:bg-primary hover:text-white">
+                      <X size={14} strokeWidth={3} />
+                    </button>
                   </li>
                 );
               })}
             </ul>
+            <button type="button" data-edit-add="pricing.options" className="mt-2 w-full flex items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-[#2f6bff]/60 bg-[#2f6bff]/5 py-2.5 text-[14px] font-bold text-[#2f6bff]">
+              <Plus size={16} strokeWidth={3} /> 옵션 추가
+            </button>
           </div>
 
           {/* 영수증 */}

@@ -36,6 +36,18 @@ export interface BulkSpec {
   note?: string;
 }
 
+/** 항목을 더하고 뺄 수 있는 목록의 설정(칸 경로 → 설정). 화면의 「+ 추가」·「빼기」(data-edit-add / data-edit-remove)와 칸 목록이 같이 쓴다. */
+export interface ListSpec {
+  /** 새 항목 기본값. id는 엔진이 겹치지 않게 붙인다. 없으면 마지막 항목 모양을 빈 값으로. */
+  newItem?: Record<string, Json>;
+  /** 뺄 수 없는 항목의 id(코드가 id로 찾는 것) */
+  locked?: string[];
+  /** 같은 목록 항목 안에서 다른 항목 id를 담는 배열 칸 이름. 항목을 빼면 남은 항목의 이 칸에서 그 id를 지운다. 예) ["conflicts"] */
+  refs?: string[];
+  /** 화면 「+ 추가」로 새 항목을 만들면 바로 고칠 칸 이름. 기본은 itemTitle 첫 칸 */
+  focus?: string;
+}
+
 /** 칸마다 입력창 아래 붙는 설명. 함수면 지금 내용(d)과 그 칸의 전체 경로(path)를 보고 만든다. */
 export type Hint = string | ((d: any, path: Path) => string);
 
@@ -56,6 +68,8 @@ export interface Schema<D extends object = Record<string, Json>> {
   hidden?: string[];
   /** 항목 수를 바꾸면 안 되는 목록(칸 경로). 순서만 바꾼다. */
   fixedLists?: string[];
+  /** 목록별 새 항목 기본값·빼기 잠금·id 정리 */
+  lists?: Record<string, ListSpec>;
   /** 여러 줄 입력으로 보일 칸 이름(그 밖에는 40자가 넘거나 줄바꿈이 있으면 여러 줄) */
   longText?: string[];
   /** 사진 칸(칸 경로 → 사진 설정). 값은 사진 이름(src) 문자열이다. */
@@ -139,4 +153,64 @@ export function missingPhoto(s: Schema<any>, d: Json): Path | null {
   };
   walk(d, []);
   return found;
+}
+
+const TITLE_KEYS = ["name", "title", "label", "quote"];
+export const titleKeysOf = (s: Schema<any>) => s.itemTitle ?? TITLE_KEYS;
+
+/** 새 항목: 마지막 항목 모양을 빈 값으로(kind·type 같은 종류 칸은 그대로, id는 시각으로 새로) */
+export function blank(v: Json): Json {
+  if (typeof v === "string") return "";
+  if (typeof v === "number") return 0;
+  if (typeof v === "boolean") return false;
+  if (Array.isArray(v)) return [];
+  if (isObj(v)) return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, k === "id" ? `new-${Date.now().toString(36)}` : k === "kind" || k === "type" ? x : blank(x)]));
+  return v;
+}
+
+const isFixed = (s: Schema<any>, list: Path) => (s.fixedLists ?? []).includes(keyOf(list)) || isHidden(s, list);
+const idOf = (item: Json) => (isObj(item) && typeof item.id === "string" ? item.id : undefined);
+
+/** 그 목록에 항목을 더할 수 있나 */
+export const canAdd = (s: Schema<any>, d: Json, list: Path) => Array.isArray(getIn(d, list)) && !isFixed(s, list);
+
+/** 그 항목을 뺄 수 있나. 못 빼면 이유를 돌려준다. */
+export function removeBlock(s: Schema<any>, d: Json, item: Path): string | null {
+  const list = item.slice(0, -1);
+  const v = getIn(d, item);
+  if (v === undefined || !Array.isArray(getIn(d, list))) return "없는 항목이에요.";
+  if (isFixed(s, list)) return "이 목록은 항목 수를 바꿀 수 없어요.";
+  const id = idOf(v);
+  if (id && s.lists?.[keyOf(list)]?.locked?.includes(id)) return "페이지 동작에 묶인 항목이라 뺄 수 없어요. 이름·설명은 고칠 수 있어요.";
+  return null;
+}
+
+/** 목록 끝에 새 항목을 붙인다. 돌려주는 path는 새 항목 경로. */
+export function addItem(s: Schema<any>, d: Json, list: Path): { doc: Json; path: Path } {
+  const items = (getIn(d, list) as Json[]) ?? [];
+  const spec = s.lists?.[keyOf(list)];
+  let next: Json = spec?.newItem ? structuredClone(spec.newItem) : blank(items[items.length - 1]);
+  const last = items[items.length - 1];
+  if (isObj(next) && (spec?.newItem ? true : isObj(last) && "id" in last)) {
+    // 지운 항목 id를 다시 쓰지 않게 시각으로 만든다(손님 화면이 들고 있던 「고른 옵션」이 새 항목에 붙지 않게)
+    const ids = new Set(items.map(idOf));
+    let id = `new-${Date.now().toString(36)}`;
+    for (let n = 2; ids.has(id); n++) id = `new-${Date.now().toString(36)}-${n}`;
+    next = Object.assign({ id }, next, { id });
+  }
+  return { doc: setIn(d, list, [...items, next]), path: [...list, items.length] };
+}
+
+/** 항목을 뺀다(잠긴 항목은 그대로). refs에 적은 칸에서 뺀 id도 지운다. */
+export function removeItem(s: Schema<any>, d: Json, item: Path): Json {
+  if (removeBlock(s, d, item)) return d;
+  const list = item.slice(0, -1);
+  const i = item[item.length - 1] as number;
+  const items = getIn(d, list) as Json[];
+  const id = idOf(items[i]);
+  const refs = s.lists?.[keyOf(list)]?.refs ?? [];
+  const left = items
+    .filter((_, j) => j !== i)
+    .map((x) => (id && isObj(x) ? Object.fromEntries(Object.entries(x).map(([k, v]) => [k, refs.includes(k) && Array.isArray(v) ? v.filter((r) => r !== id) : v])) : x));
+  return setIn(d, list, left);
 }

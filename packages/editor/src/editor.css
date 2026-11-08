@@ -17,6 +17,13 @@
   outline-offset: 2px;
   border-radius: 4px;
 }
+/* 빈 글자 칸도 누를 수 있게 자리를 보인다 */
+.edit-mode [data-edit-kind="text"]:empty::before,
+.edit-mode [data-edit-kind="number"]:empty::before {
+  content: "비어 있음 · 눌러서 쓰기";
+  color: rgb(47 107 255 / 0.6);
+  font-weight: 400;
+}
 .edit-mode [data-edit-kind]:hover {
   outline: 2px solid #2f6bff;
   background-color: rgb(47 107 255 / 0.06);
@@ -25,6 +32,16 @@
   outline: 2.5px solid #2f6bff;
   outline-offset: 3px;
   background-color: rgb(47 107 255 / 0.1);
+}
+
+/* 목록 더하기·빼기 단추(data-edit-add / data-edit-remove): 「눌러 고치기」이고 할 수 있을 때만 보인다 */
+:root:not(.edit-mode) :is([data-edit-add], [data-edit-remove]),
+[data-edit-add]:not([data-edit-ok]) {
+  display: none !important;
+}
+/* 뺄 수 없는 항목은 단추 자리만 남겨 줄이 어긋나지 않게 */
+[data-edit-remove]:not([data-edit-ok]) {
+  visibility: hidden;
 }
 
 /* /edit 패널: 미리보기에서 누른 칸으로 옮겨 왔을 때 잠깐 빛난다 */

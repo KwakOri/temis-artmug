@@ -45,6 +45,26 @@ mountEditor(schema);
 
 값의 뜻이 옆 칸에 달린 숫자(예: 옵션 `value`는 `kind`가 정액이면 원, 비율이면 %)는 `hints`에 함수를 적어 설명을 바꾼다. 함수는 `(d, path)`를 받는다(path는 번호까지 있는 전체 경로). 값이 안 쓰이는 경우에는 디자인에서 `data-edit`를 고르기 칸(`kind`) 쪽으로 붙이면 누를 때 칸 목록으로 간다.
 - `hidden`에 적었거나 content.json에 없는 경로 → 점선 없음, 눌러도 페이지 동작 그대로
+- 빈 글자 칸은 「비어 있음 · 눌러서 쓰기」 자리가 보인다(눌러 고치기일 때만)
+
+목록에 항목을 더하고 빼는 단추는 디자인이 그리고 표시만 붙인다. 「눌러 고치기」일 때만 보이고, 누르면 칸 목록의 「+ 추가」·빼기와 같은 규칙으로 동작한다(화면에서 더하면 새 항목 이름 칸이 바로 열림).
+
+```tsx
+<button data-edit-remove={`pricing.options.${i}`}>빼기</button>   {/* 항목 경로 */}
+<button data-edit-add="pricing.options">+ 옵션 추가</button>       {/* 목록 경로 */}
+```
+
+목록별 규칙은 칸 목록 `lists`에 적는다(엔진에 손님 id를 적지 않는다).
+
+```ts
+lists: {
+  "pricing.options": {
+    newItem: { name: "새 옵션", kind: "fixed", value: 0, desc: "" }, // 새 항목 기본값(id는 엔진이 겹치지 않게 붙임)
+    locked: ["omakase"],     // 코드가 id로 찾는 항목: 빼기 잠금(화면 단추 숨김, 칸 목록 휴지통 꺼짐)
+    refs: ["conflicts"],     // 항목을 빼면 남은 항목의 이 배열 칸에서 그 id를 지운다
+  },
+},
+```
 
 ## 새 손님 세우기
 
@@ -72,9 +92,10 @@ mountEditor(schema);
 | `choices` | 고르기 칸 → `[값, 보이는 이름][]` |
 | `hidden` | 숨길 칸 |
 | `fixedLists` | 항목 수를 못 바꾸는 목록(순서만) |
+| `lists` | 목록 경로 → `{ newItem?, locked?, refs?, focus? }` 새 항목 기본값·빼기 잠금 id·뺄 때 정리할 id 배열 칸·화면에서 더한 뒤 열 칸 |
 | `longText` | 늘 여러 줄 입력인 칸 이름 |
 | `photos` | 사진 칸 → `{ dir, sizes?, missing? }` (파일: `public/<dir>/<값>-s.webp`, `-l.webp`) |
-| `hints` | 칸 경로 → 입력창 아래 설명(문자열 또는 `(d) => 문자열`) |
+| `hints` | 칸 경로 → 입력창 아래 설명(문자열 또는 `(d, path) => 문자열`) |
 | `tabOf` | 다른 탭 맨 위에 같이 보일 칸. `{ brand: "hero" }` |
 | `bulk` | 사진 여러 장 한꺼번에 추가 `{ list, photo, choose?, title, note? }` |
 | `logo`, `title`, `panelNote`, `itemTitle`, `contentPath` | 머리 로고·제목, 패널 아래 도움말, 목록 항목 머리 이름 칸, content.json 위치 |
@@ -96,3 +117,4 @@ mountEditor(schema);
 
 - 0.1.0 (2026-11-08): 테미스 편집기(큐 #42·#43)에서 떼어 냄.
 - 0.1.1 (2026-11-09): 미리보기에서 숫자도 그 자리에서 고친다(전에는 칸 목록으로 옮겨 감). `hints` 함수가 두 번째 인자로 전체 경로를 받는다. 칸 목록은 그대로 써도 된다.
+- 0.1.2 (2026-11-09): 목록 더하기·빼기 단추(`data-edit-add`·`data-edit-remove`)와 칸 목록 `lists`(새 항목 기본값·빼기 잠금·id 정리). 빈 글자 칸 자리 표시. 칸 목록은 그대로 써도 된다.

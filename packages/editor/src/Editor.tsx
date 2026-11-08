@@ -10,6 +10,9 @@ import { forgetToken, getToken, repoOf } from "./github";
 import { SIZES, makePhoto, toDataUrl } from "./image";
 import { EDIT_MSG, type FromPage, type PageCmd, type Rect } from "./page";
 import {
+  addItem,
+  blank,
+  canAdd,
   choicesOf,
   describe,
   getIn,
@@ -24,7 +27,10 @@ import {
   parsePath,
   photoOf,
   photosIn,
+  removeBlock,
+  removeItem,
   setIn,
+  titleKeysOf,
   type Json,
   type Path,
   type Schema,
@@ -34,7 +40,8 @@ type Doc = Record<string, Json>;
 
 /** 아직 저장 안 한 새 사진: src → 두 벌 + 썸네일 주소 */
 type Pending = Record<string, { s: Blob; l: Blob; url: string }>;
-const Ctx = createContext<{ schema: Schema<any>; pending: Pending; pick: (path: Path, file: File) => void }>(null!);
+type Ops = { schema: Schema<any>; pending: Pending; pick: (path: Path, file: File) => void; add: (list: Path) => void; remove: (item: Path) => void; doc: Json };
+const Ctx = createContext<Ops>(null!);
 
 const thumbOf = (schema: Schema<any>, pending: Pending, path: Path, src: string) => pending[src]?.url ?? (src ? `./${photoOf(schema, path)!.dir}/${src}-s.webp` : "");
 
@@ -63,20 +70,10 @@ function Photo({ path, src }: { path: Path; src: string }) {
   );
 }
 
-/** 새 항목: 마지막 항목 모양을 빈 값으로. id는 겹치지 않게 새로 만든다. */
-function blank(v: Json): Json {
-  if (typeof v === "string") return "";
-  if (typeof v === "number") return 0;
-  if (typeof v === "boolean") return false;
-  if (Array.isArray(v)) return [];
-  if (isObj(v)) return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, k === "id" ? `new-${Date.now().toString(36)}` : k === "kind" || k === "type" ? x : blank(x)]));
-  return v;
-}
-
 const input = "w-full rounded-lg border border-ed-line bg-white px-3 py-2 text-sm text-ed-ink focus:outline-ed-accent";
 
 function Field({ name, path, value, onChange }: { name: string; path: Path; value: Json; onChange: (p: Path, v: Json) => void }) {
-  const { schema } = useContext(Ctx);
+  const { schema, add, remove, doc } = useContext(Ctx);
   const k = keyOf(path);
   if (isHidden(schema, path)) return null;
   if (photoOf(schema, path) && typeof value === "string") return <Photo path={path} src={value} />;
@@ -125,8 +122,8 @@ function Field({ name, path, value, onChange }: { name: string; path: Path; valu
     );
   }
   if (Array.isArray(value)) {
-    const fixed = (schema.fixedLists ?? []).includes(k);
-    const titleKeys = schema.itemTitle ?? ["name", "title", "label", "quote"];
+    const fixed = !canAdd(schema, doc, path);
+    const titleKeys = titleKeysOf(schema);
     const move = (i: number, d: number) => {
       const next = [...value];
       [next[i], next[i + d]] = [next[i + d], next[i]];
@@ -154,17 +151,21 @@ function Field({ name, path, value, onChange }: { name: string; path: Path; valu
               <button type="button" title="아래로" disabled={i === value.length - 1} onClick={() => move(i, 1)} className="p-1.5 text-ed-ink/50 disabled:opacity-20">
                 <ArrowDown size={16} />
               </button>
-              {!fixed && (
-                <button type="button" title="빼기" onClick={() => confirm("이 항목을 뺄까요?") && onChange(path, value.filter((_, j) => j !== i))} className="p-1.5 text-red-500/70">
-                  <Trash2 size={16} />
-                </button>
-              )}
+              {!fixed &&
+                (() => {
+                  const why = removeBlock(schema, doc, [...path, i]);
+                  return (
+                    <button type="button" title={why ?? "빼기"} disabled={!!why} onClick={() => remove([...path, i])} className="p-1.5 text-red-500/70 disabled:text-ed-ink/20">
+                      <Trash2 size={16} />
+                    </button>
+                  );
+                })()}
             </div>
             {isObj(item) && Object.entries(item).map(([n, v]) => <Field key={n} name={n} path={[...path, i, n]} value={v} onChange={onChange} />)}
           </div>
         ))}
         {!fixed && value.length > 0 && (
-          <button type="button" onClick={() => onChange(path, [...value, blank(value[value.length - 1])])} className="flex items-center gap-1 text-[13px] font-bold text-ed-accent">
+          <button type="button" onClick={() => add(path)} className="flex items-center gap-1 text-[13px] font-bold text-ed-accent">
             <Plus size={16} /> 추가
           </button>
         )}
@@ -493,6 +494,8 @@ export default function Editor({ schema }: { schema: Schema<any> }) {
       if (e.origin !== location.origin || e.source !== frame.current?.contentWindow || e.data?.type !== EDIT_MSG || !docRef.current) return;
       const m = e.data;
       if (m.action === "move") return setSel((s) => (s ? { ...s, rect: m.rect } : s));
+      if (m.action === "add") return add(parsePath(m.list), true);
+      if (m.action === "remove") return remove(parsePath(m.path));
       const path = parsePath(m.path);
       const v = getIn(docRef.current, path);
       const kind = kindOf(schema, path, v);
@@ -546,6 +549,30 @@ export default function Editor({ schema }: { schema: Schema<any> }) {
   };
 
   const edit = (p: Path, v: Json) => setDoc((d) => setIn(d, p, v) as Doc);
+  /** 목록 끝에 새 항목(칸 목록 「+ 추가」, 화면 「+ 추가」). 화면에서 더했으면 새 항목의 이름 칸을 바로 연다. */
+  const add = (list: Path, fromPage = false) => {
+    const d = docRef.current;
+    if (!d || !canAdd(schema, d, list)) return;
+    const r = addItem(schema, d, list);
+    setDoc(r.doc as Doc);
+    const spec = schema.lists?.[keyOf(list)];
+    const item = getIn(r.doc, r.path);
+    const name = spec?.focus ?? titleKeysOf(schema).find((t) => isObj(item) && typeof item[t] === "string");
+    if (fromPage && name) toPage({ action: "pick", path: [...r.path, name].join(".") });
+  };
+  /** 항목 빼기(잠긴 항목은 이유를 알려 준다) */
+  const remove = (item: Path) => {
+    const d = docRef.current;
+    if (!d) return;
+    const why = removeBlock(schema, d, item);
+    if (why) return void setMsg(why);
+    const v = getIn(d, item);
+    const title = isObj(v) ? titleKeysOf(schema).map((t) => v[t]).find((t) => typeof t === "string" && t) : "";
+    if (!confirm(title ? `「${title}」 항목을 뺄까요?` : "이 항목을 뺄까요?")) return;
+    setSel(null);
+    toPage({ action: "clear" });
+    setDoc(removeItem(schema, d, item) as Doc);
+  };
 
   // 사진 고르기: 줄여서 새 이름(src)으로 들고 있다가 저장 때 같이 올린다. 미리보기용 작은 사진은 localStorage에도 둔다.
   const shrink = async (file: File, path: Path, n = 0) => {
@@ -728,7 +755,7 @@ export default function Editor({ schema }: { schema: Schema<any> }) {
               </button>
             ))}
           </nav>
-          <Ctx.Provider value={{ schema, pending, pick }}>
+          <Ctx.Provider value={{ schema, pending, pick, add, remove, doc }}>
             {Object.entries(schema.tabOf ?? {})
               .filter(([, t]) => t === tab)
               .map(([k]) => (
@@ -767,7 +794,7 @@ export default function Editor({ schema }: { schema: Schema<any> }) {
         </aside>
       </div>
       {sel && (
-        <Ctx.Provider value={{ schema, pending, pick }}>
+        <Ctx.Provider value={{ schema, pending, pick, add, remove, doc }}>
           <InlineEdit
             sel={sel}
             doc={doc}

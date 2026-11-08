@@ -66,6 +66,14 @@ export default defineSchema({
   hidden: ["id", "conflicts", "hero.title", "hero.sub", "hero.tags"],
   // 구성 3개는 코드가 id로 찾는다
   fixedLists: ["pricing.plans"],
+  lists: {
+    // 옵션: 오마카세는 수정 횟수·신청 양식 칸이 id로 묶여 있어 못 뺀다. 옵션을 빼면 다른 옵션의 「같이 못 고름」에서도 지운다.
+    "pricing.options": {
+      newItem: { name: "새 옵션", kind: "fixed", value: 0, desc: "" },
+      locked: ["omakase"],
+      refs: ["conflicts"],
+    },
+  },
   longText: ["body", "sub", "desc", "quote"],
   photos: {
     "works.items.src": { dir: "works", missing: "사진이 없는 작업물이 있어요. 사진을 고르거나 그 항목을 빼 주세요." },
