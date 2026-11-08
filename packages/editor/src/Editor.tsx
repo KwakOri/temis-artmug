@@ -1,91 +1,51 @@
-// 손님용 편집기: data.ts 모양 그대로 칸을 그려 고치고, 깃허브 저장소의 public/content.json(+작업물 사진)으로 저장한다.
+// 공통 편집기(/edit): 칸 목록(schema)을 읽어 칸을 그려 고치고, 깃허브 저장소의 content.json(+새 사진)으로 저장한다.
 // 저장하면 GitHub Actions가 다시 배포해 1~2분 뒤 상세페이지에 적용된다.
 // 오른쪽 미리보기는 ./?draft&edit(localStorage의 고치는 중인 내용)를 띄운다.
-// 미리보기의 글자를 누르면 그 자리 팝오버(폰은 아래 시트)에서 원문을 고치고, 사진·금액·목록은 왼쪽 칸 목록의 그 줄로 옮겨 간다(page/editMode.ts).
+// 미리보기의 글자를 누르면 그 자리 팝오버(폰은 아래 시트)에서 원문을 고치고, 사진은 사진 바꾸기, 금액·목록은 왼쪽 칸 목록의 그 줄로 옮겨 간다(page.ts).
+// 손님마다 다른 것은 schema뿐이다. 여기에 손님 이름·칸 이름을 적지 않는다.
 import { ArrowDown, ArrowUp, ExternalLink, ImagePlus, ListTree, MousePointerClick, Plus, Settings, Trash2 } from "lucide-react";
-import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
-import type { Doc, PlanId } from "../page/data";
-import { EDIT_MSG, type FromPage, type PageCmd, type Rect } from "../page/editMode";
-import { DEFAULT_DOC, DRAFT_KEY, PENDING_KEY, fetchPublished, merge, readDraft } from "../page/remote";
-import { SITE } from "../site";
-import { WORKS_DIR, commit, connect, forgetToken, getToken, loadContent } from "./github";
-import { makeWork, toDataUrl } from "./image";
+import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { DRAFT_KEY, PENDING_KEY, fetchPublished, merge, readDraft } from "./content";
+import { forgetToken, getToken, repoOf } from "./github";
+import { SIZES, makePhoto, toDataUrl } from "./image";
+import { EDIT_MSG, type FromPage, type PageCmd, type Rect } from "./page";
+import {
+  choicesOf,
+  describe,
+  getIn,
+  hintsFor,
+  isHidden,
+  isObj,
+  keyOf,
+  kindOf,
+  labelOf,
+  missingPhoto,
+  nameOf,
+  parsePath,
+  photoOf,
+  photosIn,
+  setIn,
+  type Json,
+  type Path,
+  type Schema,
+} from "./schema";
 
-type Path = (string | number)[];
-type Json = unknown;
+type Doc = Record<string, Json>;
 
-/** 칸 이름 */
-const LABEL: Record<string, string> = {
-  brand: "브랜드 이름",
-  hero: "첫 화면",
-  strip: "맨 위 검은 띠 문구",
-  count: "함께한 스트리머 수 (제목의 {숫자})",
-  benefits: "이런 점이 좋아요",
-  icon: "아이콘",
-  title: "제목",
-  body: "본문",
-  sub: "설명",
-  works: "작업물",
-  src: "사진",
-  items: "항목",
-  cat: "구성",
-  demo: "체험존",
-  reviews: "후기",
-  quote: "한 줄 인용",
-  pricing: "가격",
-  plans: "구성",
-  name: "이름",
-  price: "가격(원)",
-  desc: "설명",
-  points: "특징",
-  badge: "배지",
-  options: "옵션",
-  kind: "가격 방식",
-  value: "값 (정액이면 원, 비율이면 %)",
-  revisions: "기본 수정 횟수",
-  omakaseRevisions: "오마카세 수정 횟수",
-  period: "작업 기간",
-  slots: "작업 자리",
-  csvUrl: "구글 시트 「공개」 탭 CSV 주소",
-  note: "안내 문구",
-  process: "진행 순서",
-  notice: "주의사항",
-  must: "필독 표시(처음부터 펼침)",
-  form: "신청 양식",
-  fields: "칸",
-  label: "칸 이름",
-  type: "칸 종류",
-  required: "필수",
-  placeholder: "예시 문구",
-  showIf: "보이는 조건",
-  attachNote: "첨부 안내",
-};
-
-const CHOICES: Record<string, [string, string][]> = {
-  kind: [["fixed", "정액(음수면 할인)"], ["percent", "고른 구성 가격의 %"], ["ask", "별도 문의"]],
-  cat: [["structured", "정형"], ["unstructured", "비정형"], ["team", "팀"]],
-  icon: [["pencil", "연필"], ["phone", "폰"], ["users", "사람들"], ["heart", "하트"]],
-  type: [["text", "한 줄"], ["longtext", "여러 줄"], ["number", "숫자"], ["date", "날짜"]],
-  showIf: [["", "늘"], ["omakaseOff", "오마카세가 아닐 때만"], ["team", "팀 시간표일 때만"]],
-};
-
-/** 지금 페이지에 안 쓰이거나 코드가 쓰는 값이라 숨기는 칸 */
-const HIDDEN = new Set(["id", "conflicts", "hero.title", "hero.sub", "hero.tags"]);
-/** 항목을 늘리거나 줄이면 안 되는 목록(구성 3개는 코드가 id로 찾는다) */
-const FIXED_LIST = new Set(["pricing.plans"]);
-
-/** 아직 저장 안 한 새 작업물 사진: src → 두 벌 + 썸네일 주소 */
+/** 아직 저장 안 한 새 사진: src → 두 벌 + 썸네일 주소 */
 type Pending = Record<string, { s: Blob; l: Blob; url: string }>;
-const PhotoCtx = createContext<{ pending: Pending; pick: (path: Path, file: File) => void }>({ pending: {}, pick: () => {} });
+const Ctx = createContext<{ schema: Schema<any>; pending: Pending; pick: (path: Path, file: File) => void }>(null!);
+
+const thumbOf = (schema: Schema<any>, pending: Pending, path: Path, src: string) => pending[src]?.url ?? (src ? `./${photoOf(schema, path)!.dir}/${src}-s.webp` : "");
 
 function Photo({ path, src }: { path: Path; src: string }) {
-  const { pending, pick } = useContext(PhotoCtx);
+  const { schema, pending, pick } = useContext(Ctx);
   const ref = useRef<HTMLInputElement>(null);
-  const url = pending[src]?.url ?? (src ? `./works/${src}-s.webp` : "");
+  const url = thumbOf(schema, pending, path, src);
   return (
     <div data-path={path.join(".")} className="flex items-center gap-3">
       {url ? <img src={url} alt="" className="h-16 w-28 rounded-md bg-white object-cover" /> : <div className="grid h-16 w-28 place-items-center rounded-md bg-white text-[12px] text-red-500">사진 없음</div>}
-      <button type="button" onClick={() => ref.current?.click()} className="flex items-center gap-1 rounded-full border border-ink/20 bg-white px-3 py-1.5 text-[13px] font-bold">
+      <button type="button" onClick={() => ref.current?.click()} className="flex items-center gap-1 rounded-full border border-ed-ink/20 bg-white px-3 py-1.5 text-[13px] font-bold">
         <ImagePlus size={15} /> {src ? "사진 바꾸기" : "사진 고르기"}
       </button>
       <input
@@ -103,19 +63,6 @@ function Photo({ path, src }: { path: Path; src: string }) {
   );
 }
 
-const key = (p: Path) => p.filter((x) => typeof x === "string").join(".");
-/** "reviews.2.body" → ["reviews", 2, "body"] */
-const parsePath = (s: string): Path => s.split(".").map((x) => (/^\d+$/.test(x) ? Number(x) : x));
-const getIn = (root: Json, path: Path): Json => path.reduce<Json>((v, k) => (v == null ? v : (v as Record<string | number, Json>)[k]), root);
-const isObj = (v: Json): v is Record<string, Json> => !!v && typeof v === "object" && !Array.isArray(v);
-
-function setIn(root: Json, path: Path, v: Json): Json {
-  if (!path.length) return v;
-  const [h, ...rest] = path;
-  if (Array.isArray(root)) return root.map((x, i) => (i === h ? setIn(x, rest, v) : x));
-  return { ...(root as object), [h]: setIn((root as Record<string, Json>)[h as string], rest, v) };
-}
-
 /** 새 항목: 마지막 항목 모양을 빈 값으로. id는 겹치지 않게 새로 만든다. */
 function blank(v: Json): Json {
   if (typeof v === "string") return "";
@@ -126,21 +73,23 @@ function blank(v: Json): Json {
   return v;
 }
 
-const input = "w-full rounded-lg border border-timetable-card-border bg-white px-3 py-2 text-sm text-ink focus:outline-primary";
+const input = "w-full rounded-lg border border-ed-line bg-white px-3 py-2 text-sm text-ed-ink focus:outline-ed-accent";
 
 function Field({ name, path, value, onChange }: { name: string; path: Path; value: Json; onChange: (p: Path, v: Json) => void }) {
-  const k = key(path);
-  if (HIDDEN.has(name) || HIDDEN.has(k)) return null;
-  if (k === "works.items.src" && typeof value === "string") return <Photo path={path} src={value} />;
-  const label = LABEL[name] ?? name;
+  const { schema } = useContext(Ctx);
+  const k = keyOf(path);
+  if (isHidden(schema, path)) return null;
+  if (photoOf(schema, path) && typeof value === "string") return <Photo path={path} src={value} />;
+  const label = labelOf(schema, name, k);
   const dp = path.join(".");
+  const choices = choicesOf(schema, name, k);
 
-  if (CHOICES[name] && typeof value === "string")
+  if (choices && typeof value === "string")
     return (
       <label data-path={dp} className="block">
-        <span className="text-[13px] font-semibold text-ink/70">{label}</span>
+        <span className="text-[13px] font-semibold text-ed-ink/70">{label}</span>
         <select className={input} value={value} onChange={(e) => onChange(path, e.target.value)}>
-          {CHOICES[name].map(([v, t]) => (
+          {choices.map(([v, t]) => (
             <option key={v} value={v}>
               {t}
             </option>
@@ -151,22 +100,22 @@ function Field({ name, path, value, onChange }: { name: string; path: Path; valu
   if (typeof value === "boolean")
     return (
       <label data-path={dp} className="flex items-center gap-2 text-sm">
-        <input type="checkbox" checked={value} onChange={(e) => onChange(path, e.target.checked)} className="accent-primary size-4" />
+        <input type="checkbox" checked={value} onChange={(e) => onChange(path, e.target.checked)} className="accent-ed-accent size-4" />
         {label}
       </label>
     );
   if (typeof value === "number")
     return (
       <label data-path={dp} className="block">
-        <span className="text-[13px] font-semibold text-ink/70">{label}</span>
+        <span className="text-[13px] font-semibold text-ed-ink/70">{label}</span>
         <input type="number" className={input} value={value} onChange={(e) => onChange(path, e.target.value === "" ? 0 : Number(e.target.value))} />
       </label>
     );
   if (typeof value === "string") {
-    const long = value.includes("\n") || value.length > 40 || ["body", "sub", "desc", "quote"].includes(name);
+    const long = value.includes("\n") || value.length > 40 || (schema.longText ?? []).includes(name);
     return (
       <label data-path={dp} className="block">
-        <span className="text-[13px] font-semibold text-ink/70">{label}</span>
+        <span className="text-[13px] font-semibold text-ed-ink/70">{label}</span>
         {long ? (
           <textarea className={input} rows={Math.max(2, value.split("\n").length + 1)} value={value} onChange={(e) => onChange(path, e.target.value)} />
         ) : (
@@ -176,28 +125,33 @@ function Field({ name, path, value, onChange }: { name: string; path: Path; valu
     );
   }
   if (Array.isArray(value)) {
-    const fixed = FIXED_LIST.has(k);
+    const fixed = (schema.fixedLists ?? []).includes(k);
+    const titleKeys = schema.itemTitle ?? ["name", "title", "label", "quote"];
     const move = (i: number, d: number) => {
       const next = [...value];
       [next[i], next[i + d]] = [next[i + d], next[i]];
       onChange(path, next);
     };
     return (
-      <fieldset data-path={dp} className="rounded-xl border border-timetable-card-border p-3 space-y-2">
-        <legend className="px-1 text-[13px] font-bold text-ink">{label}</legend>
+      <fieldset data-path={dp} className="rounded-xl border border-ed-line p-3 space-y-2">
+        <legend className="px-1 text-[13px] font-bold text-ed-ink">{label}</legend>
         {value.map((item, i) => (
-          <div key={i} data-path={`${dp}.${i}`} className={isObj(item) ? "rounded-lg bg-[#f5f0ed] p-3 space-y-2" : "flex items-start gap-1"}>
+          <div key={i} data-path={`${dp}.${i}`} className={isObj(item) ? "rounded-lg bg-ed-soft p-3 space-y-2" : "flex items-start gap-1"}>
             <div className={isObj(item) ? "flex items-center gap-1" : "contents"}>
-              {isObj(item) && <span className="flex-1 text-[13px] font-bold text-primary">{i + 1}. {String(item.name ?? item.title ?? item.label ?? item.quote ?? "").slice(0, 30)}</span>}
+              {isObj(item) && (
+                <span className="flex-1 text-[13px] font-bold text-ed-accent">
+                  {i + 1}. {String(titleKeys.map((t) => item[t]).find((t) => t != null) ?? "").slice(0, 30)}
+                </span>
+              )}
               {!isObj(item) && (
                 <div className="flex-1">
                   <Field name="" path={[...path, i]} value={item} onChange={onChange} />
                 </div>
               )}
-              <button type="button" title="위로" disabled={i === 0} onClick={() => move(i, -1)} className="p-1.5 text-ink/50 disabled:opacity-20">
+              <button type="button" title="위로" disabled={i === 0} onClick={() => move(i, -1)} className="p-1.5 text-ed-ink/50 disabled:opacity-20">
                 <ArrowUp size={16} />
               </button>
-              <button type="button" title="아래로" disabled={i === value.length - 1} onClick={() => move(i, 1)} className="p-1.5 text-ink/50 disabled:opacity-20">
+              <button type="button" title="아래로" disabled={i === value.length - 1} onClick={() => move(i, 1)} className="p-1.5 text-ed-ink/50 disabled:opacity-20">
                 <ArrowDown size={16} />
               </button>
               {!fixed && (
@@ -210,7 +164,7 @@ function Field({ name, path, value, onChange }: { name: string; path: Path; valu
           </div>
         ))}
         {!fixed && value.length > 0 && (
-          <button type="button" onClick={() => onChange(path, [...value, blank(value[value.length - 1])])} className="flex items-center gap-1 text-[13px] font-bold text-primary">
+          <button type="button" onClick={() => onChange(path, [...value, blank(value[value.length - 1])])} className="flex items-center gap-1 text-[13px] font-bold text-ed-accent">
             <Plus size={16} /> 추가
           </button>
         )}
@@ -222,39 +176,14 @@ function Field({ name, path, value, onChange }: { name: string; path: Path; valu
     return path.length === 1 ? (
       <>{body}</>
     ) : (
-      <fieldset data-path={dp} className="rounded-xl border border-timetable-card-border p-3 space-y-2">
-        <legend className="px-1 text-[13px] font-bold text-ink">{label}</legend>
+      <fieldset data-path={dp} className="rounded-xl border border-ed-line p-3 space-y-2">
+        <legend className="px-1 text-[13px] font-bold text-ed-ink">{label}</legend>
         {body}
       </fieldset>
     );
   }
   return null;
 }
-
-/** 미리보기에서 누른 칸을 어떻게 고칠지: 글자는 그 자리 입력창, 사진은 사진 바꾸기, 나머지(금액·종류·목록·순서)는 칸 목록으로 */
-const kindOf = (path: Path, v: Json): "text" | "photo" | "panel" => {
-  const name = String([...path].reverse().find((x) => typeof x === "string") ?? "");
-  if (name === "src") return "photo";
-  return typeof v === "string" && !CHOICES[name] && !HIDDEN.has(name) && !HIDDEN.has(key(path)) ? "text" : "panel";
-};
-
-/** "후기 › 3번 › 본문" */
-const describe = (path: Path) => path.map((x) => (typeof x === "number" ? `${x + 1}번` : (LABEL[x] ?? x))).join(" › ");
-
-/** *강조*·줄바꿈·{숫자}처럼 화면과 원문이 다른 칸에 붙이는 설명 */
-const RICH = new Set(["works.title", "works.sub", "demo.title", "demo.sub"]);
-const hintsFor = (path: Path, d: Doc) => {
-  const k = key(path);
-  const out: string[] = [];
-  if (RICH.has(k)) out.push("*별표* 사이 글자는 주황색으로 강조돼요.");
-  if (RICH.has(k) || k === "reviews.body") out.push("줄바꿈은 그대로 보여요.");
-  if (k === "works.title") out.push(`{숫자}는 「함께한 스트리머 수」(지금: ${d.works.count})로 바뀌어요.`);
-  if (k === "works.count") out.push("작업물 칸 제목의 {숫자}와 후기 칸 아래 문구에 들어가요.");
-  if (k === "process.body") out.push(`{횟수}는 기본 수정 횟수(지금: ${d.pricing.revisions}회)로 바뀌어요.`);
-  if (k === "pricing.period") out.push("가격 칸 설명과 영수증에 같이 들어가요.");
-  if (k === "form.fields.placeholder") out.push("신청 양식 칸 안에 흐리게 보이는 예시 문구예요.");
-  return out;
-};
 
 type Sel = { path: Path; rect: Rect; orig: Json };
 
@@ -282,11 +211,11 @@ function InlineEdit({
   const box = useRef<HTMLDivElement>(null);
   const field = useRef<HTMLTextAreaElement>(null);
   const photoIn = useRef<HTMLInputElement>(null);
-  const { pending, pick } = useContext(PhotoCtx);
+  const { schema, pending, pick } = useContext(Ctx);
   const [h, setH] = useState(220);
   const [kb, setKb] = useState(0);
   const value = getIn(doc, sel.path);
-  const photo = kindOf(sel.path, value) === "photo";
+  const photo = kindOf(schema, sel.path, value) === "photo";
   const cancel = () => {
     onEdit(sel.path, sel.orig);
     onClose();
@@ -334,16 +263,16 @@ function InlineEdit({
     style = { left, top: Math.max(8, top), width: w };
   }
 
-  const hints = hintsFor(sel.path, doc);
+  const hints = hintsFor(schema, sel.path, doc);
   const text = typeof value === "string" ? value : "";
   const src = photo ? text : "";
-  const thumb = pending[src]?.url ?? (src ? `./works/${src}-s.webp` : "");
+  const thumb = photo ? thumbOf(schema, pending, sel.path, src) : "";
 
   return (
     <div
       ref={box}
       role="dialog"
-      aria-label={describe(sel.path)}
+      aria-label={describe(schema, sel.path)}
       style={style}
       onKeyDown={(e) => {
         if (e.key === "Escape") cancel();
@@ -355,16 +284,16 @@ function InlineEdit({
           : "fixed z-30 rounded-2xl border-2 border-[#2f6bff] bg-white p-3 shadow-[0_10px_30px_rgba(27,22,18,0.2)]"
       }
     >
-      {sheet && <div aria-hidden className="mx-auto mb-2 h-1 w-10 rounded-full bg-ink/15" />}
+      {sheet && <div aria-hidden className="mx-auto mb-2 h-1 w-10 rounded-full bg-ed-ink/15" />}
       <div className="flex items-center gap-2">
-        <b className="flex-1 truncate text-[12.5px] text-[#2f6bff]">{describe(sel.path)}</b>
-        <button type="button" onClick={() => onPanel(sel.path)} className="flex shrink-0 items-center gap-1 text-[12px] text-ink/50 hover:text-ink">
+        <b className="flex-1 truncate text-[12.5px] text-[#2f6bff]">{describe(schema, sel.path)}</b>
+        <button type="button" onClick={() => onPanel(sel.path)} className="flex shrink-0 items-center gap-1 text-[12px] text-ed-ink/50 hover:text-ed-ink">
           <ListTree size={14} /> 칸 목록에서 보기
         </button>
       </div>
       {photo ? (
         <div className="mt-2 flex items-center gap-3">
-          {thumb ? <img src={thumb} alt="" className="h-16 w-28 rounded-md bg-[#f5f0ed] object-cover" /> : <div className="grid h-16 w-28 place-items-center rounded-md bg-[#f5f0ed] text-[12px] text-red-500">사진 없음</div>}
+          {thumb ? <img src={thumb} alt="" className="h-16 w-28 rounded-md bg-ed-soft object-cover" /> : <div className="grid h-16 w-28 place-items-center rounded-md bg-ed-soft text-[12px] text-red-500">사진 없음</div>}
           <button type="button" onClick={() => photoIn.current?.click()} className="flex items-center gap-1 rounded-full bg-[#2f6bff] px-3.5 py-2 text-[13px] font-bold text-white">
             <ImagePlus size={15} /> 사진 바꾸기
           </button>
@@ -390,14 +319,14 @@ function InlineEdit({
         />
       )}
       {hints.length > 0 && (
-        <ul className="mt-1.5 space-y-0.5 text-[12px] leading-snug text-ink/55">
+        <ul className="mt-1.5 space-y-0.5 text-[12px] leading-snug text-ed-ink/55">
           {hints.map((t) => (
             <li key={t}>{t}</li>
           ))}
         </ul>
       )}
       <div className={`mt-2.5 flex gap-2 ${sheet ? "" : "justify-end"}`}>
-        <button type="button" onClick={cancel} className={`h-9 rounded-full bg-[#f5f0ed] px-4 text-[13px] font-bold ${sheet ? "h-11 flex-1" : ""}`}>
+        <button type="button" onClick={cancel} className={`h-9 rounded-full bg-ed-soft px-4 text-[13px] font-bold ${sheet ? "h-11 flex-1" : ""}`}>
           취소
         </button>
         <button type="button" onClick={onClose} className={`h-9 rounded-full bg-[#2f6bff] px-4 text-[13px] font-bold text-white ${sheet ? "h-11 flex-1" : ""}`}>
@@ -408,24 +337,26 @@ function InlineEdit({
   );
 }
 
-const SECTIONS = Object.keys(DEFAULT_DOC) as (keyof Doc)[];
-
-/** 저장할 때 지우지 않을 사진(기본값이 쓰는 것. 「기본값으로 되돌리기」가 다시 찾는다) */
-/** 작업물 탭 위: 사진 여러 장을 한꺼번에 작업물로 붙인다. */
-function BulkWorks({ busy, onPick }: { busy: boolean; onPick: (files: File[], cat: PlanId) => void }) {
-  const [cat, setCat] = useState<PlanId>("unstructured");
+/** 목록 탭 위: 사진 여러 장을 한꺼번에 항목으로 붙인다(schema.bulk). */
+function BulkPhotos({ busy, onPick }: { busy: boolean; onPick: (files: File[], chosen: string) => void }) {
+  const { schema } = useContext(Ctx);
+  const bulk = schema.bulk!;
+  const [chosen, setChosen] = useState(bulk.choose?.default ?? "");
+  const choices = bulk.choose && choicesOf(schema, bulk.choose.field, `${bulk.list}.${bulk.choose.field}`);
   return (
-    <div className="rounded-xl border border-dashed border-primary/60 bg-white p-3 space-y-2">
-      <p className="text-[13px] font-bold text-ink">사진 여러 장 한꺼번에 추가</p>
+    <div className="rounded-xl border border-dashed border-ed-accent/60 bg-white p-3 space-y-2">
+      <p className="text-[13px] font-bold text-ed-ink">{bulk.title}</p>
       <div className="flex items-center gap-2">
-        <select aria-label="구성" className={`${input} max-w-[7.5rem] shrink-0`} value={cat} onChange={(e) => setCat(e.target.value as PlanId)}>
-          {CHOICES.cat.map(([v, t]) => (
-            <option key={v} value={v}>
-              {t}
-            </option>
-          ))}
-        </select>
-        <label className={`flex-1 cursor-pointer whitespace-nowrap rounded-lg bg-primary px-3 py-2 text-center text-sm font-bold text-white ${busy ? "pointer-events-none opacity-50" : ""}`}>
+        {bulk.choose && choices && (
+          <select aria-label={labelOf(schema, bulk.choose.field, `${bulk.list}.${bulk.choose.field}`)} className={`${input} max-w-[7.5rem] shrink-0`} value={chosen} onChange={(e) => setChosen(e.target.value)}>
+            {choices.map(([v, t]) => (
+              <option key={v} value={v}>
+                {t}
+              </option>
+            ))}
+          </select>
+        )}
+        <label className={`flex-1 cursor-pointer whitespace-nowrap rounded-lg bg-ed-accent px-3 py-2 text-center text-sm font-bold text-white ${busy ? "pointer-events-none opacity-50" : ""}`}>
           사진 고르기(여러 장)
           <input
             type="file"
@@ -435,23 +366,32 @@ function BulkWorks({ busy, onPick }: { busy: boolean; onPick: (files: File[], ca
             onChange={(e) => {
               const files = [...(e.target.files ?? [])];
               e.target.value = "";
-              if (files.length) onPick(files, cat);
+              if (files.length) onPick(files, chosen);
             }}
           />
         </label>
       </div>
-      <p className="text-[12px] leading-relaxed text-ink/50">고른 구성으로 목록 끝에 붙어요. 사진은 자동으로 줄여서(목록용·크게 보기용 두 장) 저장 때 한 번에 올라가요. 제목에 손님 이름은 넣지 마세요.</p>
+      {bulk.note && <p className="text-[12px] leading-relaxed text-ed-ink/50">{bulk.note}</p>}
     </div>
   );
 }
 
-const KEEP = new Set(DEFAULT_DOC.works.items.map((w) => w.src));
-const srcs = (d: Doc) => new Set(d.works.items.map((w) => w.src));
-
-export default function Editor() {
+export default function Editor({ schema }: { schema: Schema<any> }) {
+  // 디자인 기본값과 저장소. schema는 한 번 받으면 바뀌지 않는다.
+  const { DEFAULT_DOC, SECTIONS, KEEP, repo } = useMemo(() => {
+    const DEFAULT_DOC = structuredClone(schema.defaults) as Doc;
+    return {
+      DEFAULT_DOC,
+      /** 탭: 맨 위 칸들(다른 탭에 붙는 칸 제외) */
+      SECTIONS: Object.keys(DEFAULT_DOC).filter((k) => !schema.tabOf?.[k]),
+      /** 저장할 때 지우지 않을 사진(기본값이 쓰는 것. 「기본값으로 되돌리기」가 다시 찾는다) */
+      KEEP: new Set(photosIn(schema, DEFAULT_DOC).keys()),
+      repo: repoOf(schema.site, schema.contentPath),
+    };
+  }, [schema]);
   const [doc, setDoc] = useState<Doc | null>(null);
   const [saved, setSaved] = useState("");
-  const [tab, setTab] = useState<keyof Doc>("hero");
+  const [tab, setTab] = useState(SECTIONS[0]);
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
   const [pending, setPending] = useState<Pending>({});
@@ -475,7 +415,7 @@ export default function Editor() {
   // 고르던 사진은 브라우저를 닫으면 사라지므로, 이어서 고칠 때 사진 없는 항목은 「사진 없음」으로 보인다.
   useEffect(() => {
     localStorage.removeItem(PENDING_KEY);
-    (async () => (await loadContent()) ?? (await fetchPublished()))().then((pub) => {
+    (async () => (await repo.loadContent()) ?? (await fetchPublished()))().then((pub) => {
       const base = merge(DEFAULT_DOC, pub);
       const draft = readDraft();
       const resume = draft && JSON.stringify(merge(DEFAULT_DOC, draft)) !== JSON.stringify(base) && confirm("저장하지 않은 고친 내용이 있어요. 이어서 고칠까요?");
@@ -520,8 +460,9 @@ export default function Editor() {
       if (m.action === "move") return setSel((s) => (s ? { ...s, rect: m.rect } : s));
       const path = parsePath(m.path);
       const v = getIn(docRef.current, path);
-      if (v === undefined) return;
-      if (kindOf(path, v) === "panel") {
+      const kind = kindOf(schema, path, v);
+      if (!kind) return;
+      if (kind === "panel") {
         setSel(null);
         toPage({ action: "clear" });
         goPanel(path);
@@ -540,7 +481,7 @@ export default function Editor() {
   const goPanel = (path: Path) => {
     setSel(null);
     toPage({ action: "clear" });
-    setTab((path[0] === "brand" ? "hero" : path[0]) as keyof Doc);
+    setTab(schema.tabOf?.[path[0] as string] ?? (path[0] as string));
     setView("form");
     setTimeout(() => {
       for (let n = path.length; n > 0; n--) {
@@ -572,8 +513,8 @@ export default function Editor() {
   const edit = (p: Path, v: Json) => setDoc((d) => setIn(d, p, v) as Doc);
 
   // 사진 고르기: 줄여서 새 이름(src)으로 들고 있다가 저장 때 같이 올린다. 미리보기용 작은 사진은 localStorage에도 둔다.
-  const shrink = async (file: File, n = 0) => {
-    const { s, l } = await makeWork(file);
+  const shrink = async (file: File, path: Path, n = 0) => {
+    const { s, l } = await makePhoto(file, photoOf(schema, path)?.sizes ?? SIZES);
     const src = `w-${Date.now().toString(36)}${n ? `-${n}` : ""}`;
     setPending((p) => ({ ...p, [src]: { s, l, url: URL.createObjectURL(s) } }));
     try {
@@ -588,25 +529,30 @@ export default function Editor() {
   };
   const pick = (path: Path, file: File) =>
     run("사진 줄이기", async () => {
-      const { src, s, l } = await shrink(file);
+      const { src, s, l } = await shrink(file, path);
       edit(path, src);
       return `사진을 줄였어요(${Math.round(s.size / 1024)}KB · ${Math.round(l.size / 1024)}KB). 저장하면 올라가요.`;
     });
-  // 작업물 여러 장 한꺼번에: 고른 순서대로 목록 끝에 붙인다. 구성은 한 번에 고르고, 제목은 비워 둔다(갤러리엔 안 나온다).
-  const pickMany = (files: File[], cat: PlanId) =>
+  // 사진 여러 장 한꺼번에(schema.bulk): 고른 순서대로 목록 끝에 붙인다. 선택 칸은 한 번에 고르고, 나머지 글자는 비워 둔다.
+  const pickMany = (files: File[], chosen: string) =>
     run("사진 여러 장 줄이기", async () => {
-      const added: Doc["works"]["items"] = [];
+      const bulk = schema.bulk!;
+      const listPath = parsePath(bulk.list);
+      const list = (getIn(doc, listPath) as Json[] | undefined) ?? [];
+      const like = list[list.length - 1] ?? (getIn(DEFAULT_DOC, listPath) as Json[] | undefined)?.[0] ?? {};
+      const added: Json[] = [];
       for (const [i, f] of files.entries()) {
         setMsg(`사진 줄이는 중… ${i + 1} / ${files.length}`);
-        added.push({ src: (await shrink(f, i + 1)).src, cat, title: "" });
+        const { src } = await shrink(f, [...listPath, list.length + i, bulk.photo], i + 1);
+        added.push({ ...(blank(like) as object), [bulk.photo]: src, ...(bulk.choose ? { [bulk.choose.field]: chosen } : {}) });
       }
-      setDoc((d) => d && { ...d, works: { ...d.works, items: [...d.works.items, ...added] } });
-      return `작업물 ${added.length}개를 목록 끝에 붙였어요. 저장하면 한 번에 올라가요.`;
+      setDoc((d) => d && (setIn(d, listPath, [...((getIn(d, listPath) as Json[] | undefined) ?? []), ...added]) as Doc));
+      return `${labelOf(schema, nameOf(listPath.slice(0, -1)) || bulk.list, keyOf(listPath.slice(0, -1)))} ${added.length}개를 목록 끝에 붙였어요. 저장하면 한 번에 올라가요.`;
     });
 
   const saveToken = () =>
     run("깃허브 연결", async () => {
-      await connect(token.trim());
+      await repo.connect(token.trim());
       setToken("");
       setSetup(false);
       return "깃허브에 연결했어요. 이제 「저장」을 누르면 상세페이지에 반영돼요.";
@@ -626,19 +572,24 @@ export default function Editor() {
 
   const doSave = () => {
     if (!getToken()) return setSetup(true);
-    if (doc!.works.items.some((w) => !w.src)) return setMsg("사진이 없는 작업물이 있어요. 사진을 고르거나 그 항목을 빼 주세요.");
+    const hole = missingPhoto(schema, doc);
+    if (hole) return setMsg(photoOf(schema, hole)?.missing ?? `사진이 빠진 칸이 있어요(${describe(schema, hole)}). 사진을 고르거나 그 항목을 빼 주세요.`);
     run("저장", async () => {
-      const now = srcs(doc!);
+      const now = photosIn(schema, doc!);
       const files: Record<string, Blob> = {};
-      for (const [src, p] of Object.entries(pending))
-        if (now.has(src)) {
-          files[`${WORKS_DIR}/${src}-s.webp`] = p.s;
-          files[`${WORKS_DIR}/${src}-l.webp`] = p.l;
+      for (const [src, p] of Object.entries(pending)) {
+        const spec = now.get(src);
+        if (spec) {
+          files[`public/${spec.dir}/${src}-s.webp`] = p.s;
+          files[`public/${spec.dir}/${src}-l.webp`] = p.l;
         }
-      const gone = [...srcs(savedDoc())].filter((src) => !now.has(src) && !KEEP.has(src)).flatMap((src) => [`${WORKS_DIR}/${src}-s.webp`, `${WORKS_DIR}/${src}-l.webp`]);
-      const changed = SECTIONS.filter((k) => JSON.stringify(doc![k]) !== JSON.stringify(savedDoc()[k])).map((k) => LABEL[k] ?? k);
+      }
+      const gone = [...photosIn(schema, savedDoc())]
+        .filter(([src]) => !now.has(src) && !KEEP.has(src))
+        .flatMap(([src, spec]) => [`public/${spec.dir}/${src}-s.webp`, `public/${spec.dir}/${src}-l.webp`]);
+      const changed = SECTIONS.filter((k) => JSON.stringify(doc![k]) !== JSON.stringify(savedDoc()[k])).map((k) => labelOf(schema, k, k));
       const updatedAt = new Date().toISOString();
-      await commit({ ...doc, updatedAt }, files, gone, `편집기 저장: ${changed.join(", ") || "사진"}`);
+      await repo.commit({ ...doc, updatedAt }, files, gone, `편집기 저장: ${changed.join(", ") || "사진"}`);
       setSaved(JSON.stringify(doc));
       setPending({});
       localStorage.removeItem(PENDING_KEY);
@@ -651,22 +602,22 @@ export default function Editor() {
     if (confirm("이 칸들을 처음 기본값으로 되돌릴까요? 저장해야 반영돼요.")) setDoc({ ...doc!, [tab]: structuredClone(DEFAULT_DOC[tab]) });
   };
 
-  if (!doc) return <p className="p-6 text-ink/60">불러오는 중…</p>;
+  if (!doc) return <p className="p-6 text-ed-ink/60">불러오는 중…</p>;
 
   return (
-    <div className="min-h-screen text-ink">
-      <header ref={head} className="sticky top-0 z-20 flex flex-wrap items-center gap-2 border-b border-timetable-card-border bg-[#f5f0ed]/95 px-4 py-2 backdrop-blur">
-        <b className="font-[BagelFat] text-primary">TEMIS</b>
-        <span className="text-sm font-bold">상세페이지 고치기 · {doc.brand}</span>
+    <div className="min-h-screen text-ed-ink">
+      <header ref={head} className="sticky top-0 z-20 flex flex-wrap items-center gap-2 border-b border-ed-line bg-ed-soft/95 px-4 py-2 backdrop-blur">
+        {schema.logo}
+        <span className="text-sm font-bold">{schema.title?.(doc) ?? "상세페이지 고치기"}</span>
         <span className="flex-1" />
-        <span className="text-[13px] text-ink/60">{dirty ? "● 저장 안 됨" : "저장됨"}</span>
-        <button type="button" title="깃허브 연결" onClick={() => setSetup((v) => !v)} className="grid size-9 place-items-center rounded-full border border-ink/20 bg-white">
+        <span className="text-[13px] text-ed-ink/60">{dirty ? "● 저장 안 됨" : "저장됨"}</span>
+        <button type="button" title="깃허브 연결" onClick={() => setSetup((v) => !v)} className="grid size-9 place-items-center rounded-full border border-ed-ink/20 bg-white">
           <Settings size={16} />
         </button>
-        <button type="button" disabled={busy || !dirty} onClick={doSave} className="h-9 rounded-full bg-primary px-5 text-sm font-bold text-white disabled:opacity-40">
+        <button type="button" disabled={busy || !dirty} onClick={doSave} className="h-9 rounded-full bg-ed-accent px-5 text-sm font-bold text-white disabled:opacity-40">
           저장
         </button>
-        <a href="./" target="_blank" className="flex items-center gap-1 text-[13px] text-ink/60">
+        <a href="./" target="_blank" className="flex items-center gap-1 text-[13px] text-ed-ink/60">
           상세페이지 <ExternalLink size={14} />
         </a>
         <div className="flex w-full gap-1 lg:hidden">
@@ -683,13 +634,13 @@ export default function Editor() {
                 setView(v);
                 if (v === "form") closeSel();
               }}
-              className={`h-8 flex-1 rounded-full text-[13px] font-bold ${view === v ? "bg-ink text-white" : "bg-white text-ink/60"}`}
+              className={`h-8 flex-1 rounded-full text-[13px] font-bold ${view === v ? "bg-ed-ink text-white" : "bg-white text-ed-ink/60"}`}
             >
               {t}
             </button>
           ))}
         </div>
-        {msg && <p className="w-full select-all text-[13px] text-ink/80">{msg}</p>}
+        {msg && <p className="w-full select-all text-[13px] text-ed-ink/80">{msg}</p>}
         {setup && (
           <div className="w-full space-y-2 rounded-xl bg-white p-4 text-[13px] leading-relaxed">
             <b className="text-sm">깃허브 연결 {getToken() ? "(연결됨)" : ""}</b>
@@ -697,14 +648,14 @@ export default function Editor() {
             <ol className="list-decimal space-y-0.5 pl-5">
               <li>
                 깃허브에 로그인한 뒤{" "}
-                <a className="text-primary underline" href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noreferrer">
+                <a className="text-ed-accent underline" href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noreferrer">
                   새 토큰 만들기
                 </a>
                 를 열어요.
               </li>
               <li>Expiration: 원하는 기한(지나면 여기서 다시 넣으면 돼요)</li>
               <li>
-                Repository access: <b>Only select repositories</b> → <code>{SITE.repo}</code>
+                Repository access: <b>Only select repositories</b> → <code>{schema.site.repo}</code>
               </li>
               <li>
                 Permissions → Repository permissions → <b>Contents: Read and write</b>
@@ -713,7 +664,7 @@ export default function Editor() {
             </ol>
             <div className="flex flex-wrap gap-2">
               <input type="password" autoComplete="off" placeholder="github_pat_…" value={token} onChange={(e) => setToken(e.target.value)} className={`${input} max-w-sm flex-1`} />
-              <button type="button" disabled={busy || !token.trim()} onClick={saveToken} className="h-9 rounded-full bg-ink px-4 text-sm font-bold text-white disabled:opacity-40">
+              <button type="button" disabled={busy || !token.trim()} onClick={saveToken} className="h-9 rounded-full bg-ed-ink px-4 text-sm font-bold text-white disabled:opacity-40">
                 확인하고 연결
               </button>
               {getToken() && (
@@ -736,31 +687,33 @@ export default function Editor() {
       <div className="lg:grid lg:grid-cols-[minmax(380px,520px)_1fr]">
         <main className={`space-y-3 p-4 ${view === "preview" ? "hidden lg:block" : ""}`}>
           <nav className="flex flex-wrap gap-1">
-            {SECTIONS.filter((s) => s !== "brand").map((s) => (
-              <button key={s} type="button" onClick={() => setTab(s)} className={`rounded-full px-3 py-1 text-[13px] font-semibold ${tab === s ? "bg-ink text-white" : "bg-white text-ink/70"}`}>
-                {LABEL[s] ?? s}
+            {SECTIONS.map((s) => (
+              <button key={s} type="button" onClick={() => setTab(s)} className={`rounded-full px-3 py-1 text-[13px] font-semibold ${tab === s ? "bg-ed-ink text-white" : "bg-white text-ed-ink/70"}`}>
+                {labelOf(schema, s, s)}
               </button>
             ))}
           </nav>
-          <PhotoCtx.Provider value={{ pending, pick }}>
-            {tab === "hero" && <Field name="brand" path={["brand"]} value={doc.brand} onChange={edit} />}
-            {tab === "works" && <BulkWorks busy={busy} onPick={pickMany} />}
+          <Ctx.Provider value={{ schema, pending, pick }}>
+            {Object.entries(schema.tabOf ?? {})
+              .filter(([, t]) => t === tab)
+              .map(([k]) => (
+                <Field key={k} name={k} path={[k]} value={doc[k]} onChange={edit} />
+              ))}
+            {schema.bulk && parsePath(schema.bulk.list)[0] === tab && <BulkPhotos busy={busy} onPick={pickMany} />}
             <Field name={tab} path={[tab]} value={doc[tab]} onChange={edit} />
-          </PhotoCtx.Provider>
-          <button type="button" onClick={reset} className="text-[12px] text-ink/50 underline">
+          </Ctx.Provider>
+          <button type="button" onClick={reset} className="text-[12px] text-ed-ink/50 underline">
             이 탭을 기본값으로 되돌리기
           </button>
-          <p className="text-[12px] leading-relaxed text-ink/50">
-            줄바꿈은 그대로 보여요. 진행 순서의 {"{횟수}"}는 수정 횟수로, 작업물 제목의 {"{숫자}"}는 「함께한 스트리머 수」로 바뀌어요. 작업물 사진은 「사진 고르기」로 바꿔요(저장 때 같이 올라가요). 첫 화면 디자인은 여기서 못 고쳐요.
-          </p>
+          {schema.panelNote && <p className="text-[12px] leading-relaxed text-ed-ink/50">{schema.panelNote}</p>}
         </main>
         <aside
           style={{ top: headH, height: `calc(100dvh - ${headH}px)` }}
-          className={`sticky flex-col border-l border-timetable-card-border ${view === "preview" ? "flex" : "hidden lg:flex"}`}
+          className={`sticky flex-col border-l border-ed-line ${view === "preview" ? "flex" : "hidden lg:flex"}`}
         >
-          <div className="flex items-center gap-2 border-b border-timetable-card-border bg-white px-3 py-1.5 text-[12.5px]">
-            <MousePointerClick size={15} className={clickEdit ? "text-[#2f6bff]" : "text-ink/40"} />
-            <span className="flex-1 text-ink/70">{clickEdit ? "점선 글자를 누르면 바로 고쳐요. 사진·금액·목록은 칸 목록으로 옮겨 가요." : "미리보기를 손님처럼 눌러 볼 수 있어요."}</span>
+          <div className="flex items-center gap-2 border-b border-ed-line bg-white px-3 py-1.5 text-[12.5px]">
+            <MousePointerClick size={15} className={clickEdit ? "text-[#2f6bff]" : "text-ed-ink/40"} />
+            <span className="flex-1 text-ed-ink/70">{clickEdit ? "점선 글자를 누르면 바로 고쳐요. 사진·금액·목록은 칸 목록으로 옮겨 가요." : "미리보기를 손님처럼 눌러 볼 수 있어요."}</span>
             <label className="flex shrink-0 items-center gap-1.5 font-bold">
               <input
                 type="checkbox"
@@ -779,7 +732,7 @@ export default function Editor() {
         </aside>
       </div>
       {sel && (
-        <PhotoCtx.Provider value={{ pending, pick }}>
+        <Ctx.Provider value={{ schema, pending, pick }}>
           <InlineEdit
             sel={sel}
             doc={doc}
@@ -793,7 +746,7 @@ export default function Editor() {
               toPage({ action: "reveal", bottom: Math.max(0, h - (f ? innerHeight - f.bottom : 0)) });
             }}
           />
-        </PhotoCtx.Provider>
+        </Ctx.Provider>
       )}
     </div>
   );

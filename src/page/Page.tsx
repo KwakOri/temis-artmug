@@ -1,21 +1,19 @@
 // Temis 아트머그 상세페이지. 칸 순서·문구는 PLANS/TEMIS_ARTMUG_PAGE.md 4절, 값은 data.ts.
 import { ChevronDown, ChevronLeft, ChevronRight, Copy, Heart, LayoutGrid, Pencil, RotateCcw, Smartphone, Users, X, ZoomIn } from "lucide-react";
+import { photoUrl } from "@artmug/editor";
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import DemoZone from "../DemoZone";
 import Gallery from "./Gallery";
 import Hero from "./Hero";
 import { cn } from "../lib/utils";
 import { doc, type FormField, type PlanId } from "./data";
-import { readPending } from "./remote";
 import { estimate, won } from "./pricing";
 import Price from "./Price";
 import Reviews from "./Reviews";
 import Slots from "./Slots";
 
-const BASE = import.meta.env.BASE_URL;
-// /edit 미리보기(?draft)에서는 아직 커밋 안 한 새 이미지를 data URL로 보여 준다.
-const DRAFT = /[?&]draft\b/.test(location.search);
-const workSrc = (src: string, size: "s" | "l") => (DRAFT && readPending()[src]?.[size]) || `${BASE}works/${src}-${size}.webp`;
+// 작업물 사진 주소(/edit 미리보기에서는 아직 저장 안 한 새 사진도 보인다)
+const workSrc = (src: string, size: "s" | "l") => photoUrl("works", src, size);
 
 /** 줄바꿈(\n)과 *강조*를 그린다 */
 const rich = (text: string): ReactNode =>

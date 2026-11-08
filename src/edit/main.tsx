@@ -1,10 +1,5 @@
-import { StrictMode } from "react";
-import { createRoot } from "react-dom/client";
 import "../index.css";
-import Editor from "./Editor";
+import { mountEditor } from "@artmug/editor/editor";
+import schema from "../editor.schema";
 
-createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <Editor />
-  </StrictMode>
-);
+mountEditor(schema);

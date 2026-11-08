@@ -5,12 +5,15 @@ https://artmug.temis.kr/ (예전 kwakori.github.io/temis-artmug/는 이리로 �
 
 - `src/page/data.ts`: 모든 문구·가격의 모양과 기본값. 실제 내용은 `public/content.json`이 덮는다.
 - `public/content.json`, `public/works/`: 게시된 내용과 작업물 사진(`<src>-s.webp` 목록용, `-l.webp` 확대용). 편집기가 고친다.
-- `src/site.ts`: 이 페이지가 사는 깃허브 저장소(owner·repo·branch). 손님마다 복사한 뒤 이것만 바꾼다.
+- `src/site.ts`: 이 페이지가 사는 깃허브 저장소(owner·repo·branch).
+- `src/editor.schema.tsx`: 칸 목록. /edit이 무엇을 어떻게 고치게 할지(칸 이름·고르기·숨김·사진·설명). 디자인의 `data-edit` 경로와 짝.
+- `packages/editor/`: 공통 편집기 엔진 `@artmug/editor`(손님마다 같음). 쓰는 법·새 손님 세우기·버전은 `packages/editor/README.md`.
 - `src/page/pricing.ts`: 견적 계산(정액·%·별도 문의). 가격표·견적·복사 글이 같이 씀.
 - `src/page/Slots.tsx`: 구글 시트 CSV(tokpi와 같은 틀). `slots.csvUrl`이 비면 숨김, `?slots=demo`로 예시.
 - `src/DemoZone.tsx`: 시간표 체험존(요일 카드 1장 + 입력 세트). `?only=demo`로 체험존만 볼 수 있다.
 
 ## 편집기 (/edit)
+- 편집기 코드는 `packages/editor`(공통), 이 사이트 몫은 `src/editor.schema.tsx`뿐이다. 고칠 글자·사진을 늘리려면 디자인에 `data-edit`를 붙이고 필요하면 칸 목록에 이름·설명을 더한다.
 - 손님이 만든 깃허브 fine-grained 토큰(이 저장소만, Contents: Read and write)을 한 번 넣으면, 「저장」이 `public/content.json`과 새 사진을 커밋 하나로 올린다. 토큰은 그 브라우저 localStorage에만 있다.
 - 커밋되면 `.github/workflows/deploy.yml`이 빌드해 gh-pages 가지에 올리고(Pages는 그 가지를 띄움), 편집기는 배포된 `content.json`의 `updatedAt`을 보고 「적용됐어요」를 알린다(보통 1~2분).
 - 사진은 브라우저에서 긴 변 720/1600으로 줄여 올리고, 빠진 사진 파일은 지운다(기본값이 쓰는 사진은 남김).
@@ -58,5 +61,5 @@ iframe 예: `<iframe src="https://<계정>.github.io/<저장소>/" style="width:
 
 ## 손님(판매자) 페이지
 
-- 손님 한 명 = 손님 명의 깃허브 계정의 저장소 하나. 이 저장소를 복사해 `src/site.ts`를 바꾸고 main에 올리면 Actions가 gh-pages를 만들어 Pages가 켜진다.
+- 손님 한 명 = 손님 명의 깃허브 계정의 저장소 하나. 디자인·칸 목록·content.json만 손님 것으로 바꾸고 편집기는 `@artmug/editor`를 그대로 쓴다. 순서는 `packages/editor/README.md` 「새 손님 세우기」.
 - 주소: 상세페이지 `/`, 편집기 `/edit`. Temis는 artmug.temis.kr(`public/CNAME`), 손님은 `<계정>.github.io/<저장소>/`.
