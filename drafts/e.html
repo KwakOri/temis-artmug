@@ -1,0 +1,188 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="robots" content="noindex">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>TEMIS 시안 E · 위클리 다이어리</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Gowun+Dodum&family=Nanum+Pen+Script&display=swap">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--paper:#fbf6ee;--ink:#3b2a24;--mute:#3b2a24a8;--pri:#fc712b;--peach:#ffd9bf;--sage:#cfe0c3;--sky:#cfe3ef;--grid:#e9dccb}
+body{font-family:"Gowun Dodum",sans-serif;color:var(--ink);word-break:keep-all;-webkit-text-size-adjust:100%;line-height:1.7;
+  background-color:var(--paper);background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px}
+img{display:block;max-width:100%}
+button,input,textarea{font:inherit;color:inherit}button{cursor:pointer}
+details summary{list-style:none;cursor:pointer}details summary::-webkit-details-marker{display:none}
+.pen{font-family:"Nanum Pen Script",cursive;font-weight:400}
+.wrap{max-width:920px;margin:0 auto;padding:0 26px}
+h1,h2,.serif{font-family:"Gowun Batang",serif;font-weight:700}
+
+.top{display:flex;justify-content:space-between;align-items:center;max-width:920px;margin:0 auto;padding:22px 26px}
+.logo{font-family:"Gowun Batang";font-weight:700;font-size:22px;letter-spacing:.06em}
+.logo small{font-family:"Nanum Pen Script";font-size:20px;color:var(--pri);margin-left:6px;letter-spacing:0}
+.top nav{display:flex;gap:6px}
+.top nav a{text-decoration:none;color:var(--ink);font-size:14px;padding:6px 12px;border-radius:8px 8px 0 0;background:#fff;border:1px solid var(--grid);border-bottom:0}
+.top nav a:nth-child(2){background:var(--peach)}.top nav a:nth-child(3){background:var(--sage)}
+.top nav a.cta{background:var(--pri);color:#fff;border-color:var(--pri)}
+
+.tape{position:absolute;width:110px;height:28px;background:#fc712b55;transform:rotate(-4deg);top:-12px;left:50%;margin-left:-55px;mix-blend-mode:multiply}
+.tape.s{background:#8fbf7a66}.tape.b{background:#7fb3d566}
+
+.spread{display:grid;grid-template-columns:1fr 1fr;background:#fffdf9;border-radius:6px;box-shadow:0 1px 0 #e2d4c4,0 24px 50px -30px #3b2a2466;margin-top:24px;position:relative}
+.spread::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:30px;margin-left:-15px;background:linear-gradient(90deg,transparent,#3b2a2412,transparent)}
+.pg{padding:44px 40px;position:relative}
+.pg.l{background:repeating-linear-gradient(#fffdf9 0 31px,#eadfce 31px 32px)}
+.date{display:flex;gap:10px;align-items:center;font-size:13px;color:var(--mute)}
+.date b{font-family:"Gowun Batang";color:var(--ink);font-size:15px}
+h1{font-size:clamp(30px,4.6vw,44px);line-height:1.35;margin:22px 0 18px}
+h1 mark{background:linear-gradient(transparent 58%,#ffb27f 58% 92%,transparent 92%);color:inherit}
+.lead{font-size:16px;color:var(--mute)}
+.note{font-size:26px;color:var(--pri);margin-top:18px;line-height:1.2;transform:rotate(-2deg);display:inline-block}
+.act{display:flex;gap:10px;margin-top:26px;flex-wrap:wrap}
+.b{display:inline-block;padding:12px 20px;border-radius:10px;font-size:15px;text-decoration:none;color:var(--ink);background:#fff;border:1.5px solid var(--ink)}
+.b.pri{background:var(--ink);color:var(--paper)}
+.polaroid{background:#fff;padding:12px 12px 44px;box-shadow:0 10px 24px -10px #3b2a2455;position:relative;transform:rotate(2deg)}
+.polaroid figcaption{position:absolute;bottom:8px;left:14px;right:14px;font-family:"Nanum Pen Script";font-size:22px;display:flex;justify-content:space-between}
+.pg.r{display:flex;flex-direction:column;justify-content:center;gap:26px}
+.stickies{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stickies div{padding:12px 14px;font-size:13px;color:var(--mute);box-shadow:0 6px 12px -8px #3b2a2455}
+.stickies div:nth-child(1){background:#fff3c4;transform:rotate(-1.5deg)}.stickies div:nth-child(2){background:var(--peach);transform:rotate(1deg)}.stickies div:nth-child(3){background:var(--sage);transform:rotate(1deg)}.stickies div:nth-child(4){background:var(--sky);transform:rotate(-1deg)}
+.stickies b{display:block;font-family:"Gowun Batang";font-size:17px;color:var(--ink)}
+
+.sec{padding:96px 0 0}
+.sh{display:flex;align-items:flex-end;gap:16px;margin-bottom:30px;flex-wrap:wrap}
+.idx{font-family:"Gowun Batang";font-weight:700;background:var(--ink);color:var(--paper);font-size:13px;padding:4px 10px;border-radius:4px}
+h2{font-size:clamp(24px,3.6vw,32px);line-height:1.3}
+.sh .pen{font-size:23px;color:var(--pri);transform:rotate(-2deg)}
+.sh p{flex-basis:100%;color:var(--mute);font-size:15px;margin-top:-6px}
+
+.check{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.check div{background:#fff;border-radius:6px;padding:22px 22px 22px 60px;position:relative;box-shadow:0 1px 0 #e2d4c4}
+.check div::before{content:"✓";position:absolute;left:20px;top:20px;width:26px;height:26px;border:1.5px solid var(--ink);border-radius:6px;display:grid;place-items:center;font-family:"Nanum Pen Script";font-size:26px;color:var(--pri);line-height:1}
+.check b{font-family:"Gowun Batang";font-size:18px}.check p{font-size:14.5px;color:var(--mute);margin-top:4px}
+
+.idxtabs{display:flex;gap:4px;margin-bottom:-1px;position:relative;z-index:1}
+.idxtabs button{border:1px solid var(--grid);border-bottom:0;background:#f3ebdf;padding:7px 16px;border-radius:10px 10px 0 0;font-size:14px;color:var(--mute)}
+.idxtabs button.on{background:#fff;color:var(--ink);font-weight:700}
+.board{background:#fff;border:1px solid var(--grid);border-radius:0 8px 8px 8px;padding:34px 26px 26px;display:grid;grid-template-columns:repeat(3,1fr);gap:30px 22px}
+.board .polaroid{padding:9px 9px 38px;transform:rotate(var(--r,0deg))}
+.board .polaroid:nth-child(3n+1){--r:-1.6deg}.board .polaroid:nth-child(3n+2){--r:1.2deg}.board .polaroid:nth-child(3n){--r:-.6deg}
+.board img{aspect-ratio:16/9;object-fit:cover;width:100%}
+.board .polaroid figcaption{font-size:20px}
+.board .polaroid figcaption span{color:var(--pri)}
+
+.letters{display:grid;grid-template-columns:1.2fr 1fr;gap:20px}
+.letter{background:repeating-linear-gradient(#fff 0 29px,#efe4d4 29px 30px);padding:30px 28px;border-radius:4px;box-shadow:0 14px 30px -20px #3b2a2466;position:relative}
+.letter q{quotes:none;font-family:"Gowun Batang";font-weight:700;font-size:18px;line-height:1.65;display:block}
+.letter p{font-size:14px;color:var(--mute);margin-top:12px;line-height:30px}
+.letter .from{font-family:"Nanum Pen Script";font-size:22px;color:var(--pri);text-align:right;margin-top:6px}
+.letter.big q{font-size:22px}
+.letters .col{display:grid;gap:20px}
+
+.menu{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.card{position:relative;padding:26px 20px 22px;cursor:pointer;background:#fff;box-shadow:0 10px 20px -14px #3b2a2477;transition:transform .15s}
+.card:nth-child(1){background:#fff3c4}.card:nth-child(2){background:var(--peach)}.card:nth-child(3){background:var(--sky)}
+.card input{position:absolute;opacity:0}
+.card:has(input:checked){transform:translateY(-4px) rotate(-1deg);box-shadow:0 18px 30px -14px #3b2a2499}
+.card:has(input:checked)::after{content:"선택!";position:absolute;right:-6px;top:-14px;font-family:"Nanum Pen Script";font-size:24px;color:#fff;background:var(--pri);border-radius:50%;width:56px;height:56px;display:grid;place-items:center;transform:rotate(10deg)}
+.card b{font-family:"Gowun Batang";font-size:19px;display:block}.card p{font-size:13.5px;color:var(--mute);margin:6px 0 14px;min-height:46px}
+.card .pr{font-family:"Gowun Batang";font-weight:700;font-size:22px;border-top:1.5px dashed #3b2a2455;padding-top:12px;display:block}
+.card .bdg{font-family:"Nanum Pen Script";font-size:20px;color:var(--pri);margin-left:6px}
+.payarea{display:grid;grid-template-columns:1.4fr 1fr;gap:22px;margin-top:26px;align-items:start}
+.todo{background:#fff;border-radius:6px;padding:10px 22px;box-shadow:0 1px 0 #e2d4c4}
+.todo label{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px dashed var(--grid);cursor:pointer}
+.todo label:last-child{border:0}
+.todo input{appearance:none;flex:none;width:20px;height:20px;border:1.5px solid var(--ink);border-radius:4px;margin-top:3px;position:relative}
+.todo input:checked::after{content:"✓";position:absolute;left:1px;top:-12px;font-family:"Nanum Pen Script";font-size:32px;color:var(--pri)}
+.todo span{flex:1;font-size:15px}.todo small{display:block;font-size:12.5px;color:var(--mute)}
+.todo em{font-style:normal;font-size:13px;color:var(--pri);white-space:nowrap}
+.receipt{background:#fff;padding:24px 22px 26px;font-size:14px;position:sticky;top:16px;box-shadow:0 10px 20px -14px #3b2a2477}
+.receipt::after{content:"";position:absolute;left:0;right:0;bottom:-9px;height:10px;background:radial-gradient(circle at 9px 0,#fff 8px,transparent 8.5px) 0 0/18px 10px repeat-x}
+.receipt h3{font-family:"Gowun Batang";text-align:center;font-size:17px;letter-spacing:.2em}
+.receipt .ln{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed #3b2a2444}
+.receipt .tot{display:flex;justify-content:space-between;align-items:baseline;padding-top:14px}
+.receipt .tot b{font-family:"Gowun Batang";font-size:26px;color:var(--pri)}
+.receipt .pen{font-size:20px;color:var(--mute);text-align:center;margin-top:10px}
+
+.cal{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.month{background:#fff;border-radius:6px;padding:20px 22px;box-shadow:0 1px 0 #e2d4c4}
+.month .h{display:flex;justify-content:space-between;align-items:baseline}
+.month b{font-family:"Gowun Batang";font-size:24px}.month span{font-size:14px;color:var(--mute)}
+.seats{display:flex;gap:12px;margin-top:14px}
+.seats i{width:44px;height:44px;border:1.5px dashed #3b2a2466;border-radius:50%;display:grid;place-items:center;font-family:"Nanum Pen Script";font-style:normal;font-size:20px;color:var(--mute)}
+.seats i.x{border:1.5px solid var(--ink);background:var(--ink);color:var(--paper)}
+.seats i.o{border:2px solid var(--pri);color:var(--pri)}
+
+.path{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;position:relative}
+.path::before{content:"";position:absolute;left:4%;right:4%;top:26px;border-top:2px dashed #3b2a2455}
+.path div{position:relative;text-align:center}
+.path em{width:52px;height:52px;margin:0 auto;border-radius:50%;background:var(--paper);border:1.5px solid var(--ink);display:grid;place-items:center;font-family:"Gowun Batang";font-weight:700;font-style:normal;font-size:17px;position:relative}
+.path div:nth-child(odd) em{background:var(--peach)}
+.path b{display:block;font-family:"Gowun Batang";font-size:15px;margin:12px 0 4px}.path p{font-size:12.5px;color:var(--mute);line-height:1.55}
+
+.notebook{background:#fff;border-radius:6px;padding:12px 26px 12px 60px;position:relative;box-shadow:0 1px 0 #e2d4c4}
+.notebook::before{content:"";position:absolute;left:40px;top:0;bottom:0;border-left:1.5px solid #fc712b66}
+.notebook details{border-bottom:1px solid #efe4d4}
+.notebook details:last-child{border:0}
+.notebook summary{display:flex;align-items:center;gap:10px;padding:14px 0;font-family:"Gowun Batang";font-weight:700;font-size:16px}
+.notebook summary em{position:absolute;left:12px;font-style:normal;font-size:13px;color:var(--mute);font-family:"Gowun Dodum"}
+.notebook summary::after{content:"펼치기";margin-left:auto;font-family:"Nanum Pen Script";font-weight:400;font-size:19px;color:var(--mute)}
+.notebook details[open] summary::after{content:"접기"}
+.notebook ul{padding:0 0 16px 18px;font-size:14.5px;color:#3b2a24cc}
+.must{font-family:"Nanum Pen Script";font-weight:400;font-size:21px;color:#fff;background:var(--pri);padding:0 8px;border-radius:3px;transform:rotate(-3deg);display:inline-block}
+
+.form{background:#fff;border-radius:6px;padding:30px 30px 26px;display:grid;grid-template-columns:1fr 1fr;gap:18px 26px;box-shadow:0 14px 30px -20px #3b2a2466;position:relative}
+.fld{display:grid;gap:4px;font-size:14px}.fld.wide{grid-column:1/-1}.fld i{color:var(--pri);font-style:normal}
+.fld input,.fld textarea{border:0;border-bottom:1.5px solid var(--ink);background:transparent;padding:6px 2px;font-size:15px;border-radius:0;width:100%;resize:vertical}
+.fld input:focus,.fld textarea:focus{outline:0;border-color:var(--pri)}
+.send{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;gap:14px;margin-top:10px}
+.send p{font-size:14px;color:var(--mute)}.send p b{color:var(--ink)}
+.foot{padding:90px 0 40px;text-align:center;font-family:"Nanum Pen Script";font-size:24px;color:var(--mute)}
+@media(max-width:720px){.wrap{padding:0 16px}.top{padding:16px}.top nav a:not(.cta){display:none}
+.spread{grid-template-columns:1fr}.spread::before{display:none}.pg{padding:30px 22px}
+.check,.letters,.menu,.payarea,.cal,.form{grid-template-columns:1fr}.board{grid-template-columns:1fr 1fr;padding:24px 14px;gap:22px 12px}
+.card p{min-height:0}.receipt{position:static}.path{grid-template-columns:1fr;gap:0;text-align:left}.path::before{left:25px;right:auto;top:10px;bottom:10px;border-top:0;border-left:2px dashed #3b2a2455}
+.path div{display:grid;grid-template-columns:52px 1fr;gap:0 16px;text-align:left;padding-bottom:16px}.path em{grid-row:1/3}.path b{margin:4px 0 0}
+.notebook{padding-left:46px;padding-right:16px}.notebook::before{left:32px}.notebook summary em{left:8px}.form{padding:22px 18px}.send{flex-direction:column;align-items:stretch;text-align:center}}
+</style></head><body>
+<header class="top"><span class="logo">TEMIS<small>weekly diary</small></span><nav><a href="#works">작업물</a><a href="#price">가격</a><a href="#notice">주의사항</a><a class="cta" href="#form">신청하기</a></nav></header>
+<main class="wrap">
+<section class="spread">
+  <div class="pg l"><div class="date"><b>MON</b> ─ 이번 주 시간표 준비</div>
+    <h1>매주 포토샵 켜지 않아도 되는 <mark>방송 시간표</mark></h1>
+    <p class="lead">버튜버를 위한 맞춤 주간 시간표예요.<br>요일 칸만 채우면 PC와 폰에서 바로 완성돼요.</p>
+    <span class="note pen">월요일 아침, 칸만 채우면 끝!</span>
+    <div class="act"><a class="b" href="#price">가격 보기</a><a class="b pri" href="#form">신청 양식</a></div></div>
+  <div class="pg r"><figure class="polaroid"><span class="tape"></span><img src="img/hero-tt.webp" alt="TEMIS 시간표 예시"><figcaption><span>이번 주 시간표</span><span>♡</span></figcaption></figure>
+    <div class="stickies"><div>시작가<b>80,000원~</b></div><div>기간<b>시작 후 2주</b></div><div>수정<b>기본 3회</b></div><div>11월<b style="color:var(--pri)">1자리 남음</b></div></div></div>
+</section>
+
+<section class="sec"><div class="sh"><span class="idx">01</span><h2>이미지 한 장이 아니라, 매주 쓰는 시간표</h2></div>
+  <div class="check"><div><b>칸만 채우면 끝</b><p>레이어를 찾아 고칠 필요 없이 방송 정보만 적으면 돼요.</p></div><div><b>폰에서도 수정</b><p>침대에서도 이번 주 일정을 바로 바꿀 수 있어요.</p></div><div><b>팀 일정 자동 취합</b><p>팀 시간표는 팀원이 저장한 일정이 알아서 모여요.</p></div><div><b>버튜버가 만든 시간표</b><p>직접 방송하며 불편했던 점을 풀려고 만들었어요.</p></div></div></section>
+
+<section class="sec" id="works"><div class="sh"><span class="idx">02</span><h2>이렇게 만들어 드렸어요</h2><span class="pen">스크랩해 둔 작업들</span></div>
+  <div data-tabs><div class="idxtabs"><button class="on" data-tab="all">전체</button><button data-tab="structured">정형</button><button data-tab="unstructured">비정형</button><button data-tab="team">팀</button></div>
+  <div class="board"><figure class="polaroid" data-cat="structured"><img src="../works/3-structured-l.webp" alt="" loading="lazy"><figcaption>히르님<span>정형</span></figcaption></figure><figure class="polaroid" data-cat="structured"><img src="../works/4-structured-l.webp" alt="" loading="lazy"><figcaption>올뺌이님<span>정형</span></figcaption></figure><figure class="polaroid" data-cat="structured"><img src="../works/5-structured-l.webp" alt="" loading="lazy"><figcaption>아인즈님<span>정형</span></figcaption></figure><figure class="polaroid" data-cat="structured"><img src="../works/6-structured-l.webp" alt="" loading="lazy"><figcaption>베루밍님<span>정형</span></figcaption></figure><figure class="polaroid" data-cat="structured"><img src="../works/7-structured-l.webp" alt="" loading="lazy"><figcaption>버찌님<span>정형</span></figcaption></figure><figure class="polaroid" data-cat="unstructured"><img src="../works/8-unstructured-l.webp" alt="" loading="lazy"><figcaption>다르님<span>비정형</span></figcaption></figure><figure class="polaroid" data-cat="team"><img src="../works/0-team-l.webp" alt="" loading="lazy"><figcaption>LUCENT<span>팀</span></figcaption></figure><figure class="polaroid" data-cat="team"><img src="../works/1-team-l.webp" alt="" loading="lazy"><figcaption>비정상스튜디오<span>팀</span></figcaption></figure><figure class="polaroid" data-cat="team"><img src="../works/2-team-l.webp" alt="" loading="lazy"><figcaption>IRIS<span>팀</span></figcaption></figure></div></div></section>
+
+<section class="sec"><div class="sh"><span class="idx">03</span><h2>받아 본 분들의 편지</h2></div>
+  <div class="letters"><div class="letter big"><span class="tape"></span><q>이제 포토샵 켜서 하나하나 월요일...화요일...이러고 레이어 안 찾아도 되어서 너무 편해ㅠㅠ</q><p>내가 가득가득 찬 디자인을 좋아해서 가득 차 보이게 해주세요! 했는데 완 벽 천 재 바로바로 수정하는 것도 편하고 컨셉에 맞게 예쁘게 잘 나온 것 같아!</p><div class="from">from. 아트머그 후기</div></div>
+  <div class="col"><div class="letter"><span class="tape s"></span><q>모바일에서도 수정이 편리해서 좋더라구요!</q><p>오마카세 신청했더니 너무 예쁘게 디자인해주셨어요.</p></div><div class="letter"><span class="tape b"></span><q>팀이나 크루 활동하시는 분들에게 엄청 좋을 것 같아요!</q><p>저의 일정을 저장하기만 하면 자동으로 단체 스케쥴표에도 입력되어서요.</p></div></div></div></section>
+
+<section class="sec" id="price"><div class="sh"><span class="idx">04</span><h2>구성과 옵션</h2><span class="pen">고르면 영수증이 바뀌어요</span><p>최종 금액은 아트머그 결제 화면 기준이에요.</p></div>
+  <div class="menu"><label class="card"><input type="radio" name="plan" value="structured"><b>정형 시간표</b><p>깔끔한 구조로 한눈에 잘 보이는 기본형이에요.</p><span class="pr">80,000원</span></label><label class="card"><input type="radio" name="plan" value="unstructured" checked><b>비정형 시간표<span class="bdg">추천</span></b><p>독특한 배치와 화려한 연출로 개성을 살려요.</p><span class="pr">100,000원</span></label><label class="card"><input type="radio" name="plan" value="team"><b>팀 시간표</b><p>팀 일정을 통일된 디자인으로 한 장에 모아요.</p><span class="pr">120,000원</span></label></div>
+  <div class="payarea"><div class="todo"><label><input type="checkbox" data-opt="fast"><span>빠른 마감<small>일주일 안에 받아요. 고른 구성의 기본가만큼 추가돼요.</small></span><em>+100%</em></label><label><input type="checkbox" data-opt="multi"><span>하루 여러 방송<small>하루에 방송을 두 번 이상 적을 수 있게 만들어요.</small></span><em>무료</em></label><label><input type="checkbox" data-opt="offmemo"><span>휴방 메모<small>휴방 칸에 짧은 메모를 적을 수 있어요.</small></span><em>무료</em></label><label><input type="checkbox" data-opt="weekmemo"><span>주간 메모<small>이번 주 공지를 적는 칸을 넣어요.</small></span><em>무료</em></label><label><input type="checkbox" data-opt="omakase"><span>오마카세<small>디자인을 맡겨 주세요. 진행이 빨라지는 대신 수정은 1회예요.</small></span><em>무료</em></label><label><input type="checkbox" data-opt="private"><span>포트폴리오 비공개<small>완성작을 포트폴리오로 공개하지 않아요.</small></span><em>+10,000원</em></label><label><input type="checkbox" data-opt="review"><span>후기 이벤트<small>완성 뒤 아트머그에 후기를 남겨 주시면 할인해 드려요.</small></span><em>−10,000원</em></label><label><input type="checkbox" data-opt="extra"><span>배경 전환·스티커<small>움직이는 배경이나 스티커는 문의 때 따로 견적을 드려요.</small></span><em>별도 문의</em></label></div>
+  <div class="receipt"><h3>RECEIPT</h3><div class="ln"><span>구성</span><b data-plan-name></b></div><div class="ln"><span>수정</span><span data-rev></span></div><div class="ln"><span>기간</span><span>시작 후 2주</span></div><div class="tot"><span>예상 견적</span><b data-total></b></div><p class="pen">thank you ♡</p></div></div></section>
+
+<section class="sec"><div class="sh"><span class="idx">05</span><h2>작업 자리</h2><p>결제 확인 순서대로 작업해요. 남은 자리는 문의 때 다시 확인해 드려요.</p></div>
+  <div class="cal"><div class="month"><div class="h"><b>11월</b><span>접수 중 · 1/4 남음</span></div><div class="seats"><i class="x">마감</i><i class="x">마감</i><i class="x">마감</i><i class="o">빈자리</i></div></div><div class="month"><div class="h"><b>12월</b><span>11/20 오픈 · 4/4 남음</span></div><div class="seats"><i>1</i><i>2</i><i>3</i><i>4</i></div></div></div></section>
+
+<section class="sec"><div class="sh"><span class="idx">06</span><h2>이렇게 진행돼요</h2></div>
+  <div class="path"><div><em>1</em><b>신청</b><p>아래 양식을 복사해 아트머그 「작가에게 문의」로 보내 주세요.</p></div><div><em>2</em><b>견적·결제</b><p>구성과 금액을 확인해 드리면 아트머그에서 결제해 주세요.</p></div><div><em>3</em><b>레퍼런스 확인</b><p>보내 주신 캐릭터·참고 자료를 보고 방향을 잡아요.</p></div><div><em>4</em><b>디자인 시안</b><p>방향에 맞춰 디자인 시안을 보내 드려요.</p></div><div><em>5</em><b>수정</b><p>기본 3회예요. 고칠 곳을 모아서 알려 주세요.</p></div><div><em>6</em><b>시간표 제작</b><p>확정된 디자인으로 칸을 채우는 시간표를 만들어요.</p></div><div><em>7</em><b>완성·전달</b><p>완성된 시간표와 사용 방법을 안내해 드려요.</p></div></div></section>
+
+<section class="sec" id="notice"><div class="sh"><span class="idx">07</span><h2>신청 전에 꼭 읽어 주세요</h2></div>
+  <div class="notebook"><details open><summary><em>01</em>문의 방법 <span class="must">필독</span></summary><ul><li>결제 전에는 아트머그 문의로만 이야기해요. 카카오톡·디스코드·이메일 같은 개인 연락처는 적지 말아 주세요.</li></ul></details><details open><summary><em>02</em>결과물 형태 <span class="must">필독</span></summary><ul><li>이미지 파일 한 장이 아니라, 칸에 글을 넣으면 시간표 이미지가 만들어지는 템플릿으로 드려요.</li><li>사용 방법은 완성 때 안내해 드려요.</li></ul></details><details><summary><em>03</em>준비물</summary><ul><li>캐릭터 이미지(최대 5장)와 참고 디자인은 문의할 때 첨부해 주세요.</li></ul></details><details><summary><em>04</em>오마카세</summary><ul><li>원하는 디자인이 뚜렷하지 않으면 오마카세를 추천해요.</li><li>진행이 빨라지는 대신 수정은 1회예요. 처음부터 다시 만드는 수정은 어려워요.</li></ul></details><details><summary><em>05</em>수정 범위</summary><ul><li>시안 확정 뒤 구조를 바꾸거나 기능을 새로 더하면 추가 비용이 생길 수 있어요.</li></ul></details><details><summary><em>06</em>일정</summary><ul><li>결제 확인 순서대로 시작해요. 자료 전달이나 시안 확인이 늦어지면 일정도 늦어져요.</li></ul></details><details><summary><em>07</em>환불</summary><ul><li>아트머그 규정을 따라요. 시안 작업이 시작된 뒤에는 환불이 어려울 수 있어요.</li></ul></details><details><summary><em>08</em>포트폴리오</summary><ul><li>완성작은 포트폴리오로 공개할 수 있어요. 원하지 않으면 「포트폴리오 비공개」 옵션을 골라 주세요.</li></ul></details><details><summary><em>09</em>이용 범위</summary><ul><li>신청하신 분(팀은 그 팀)의 방송에서 쓸 수 있어요. 되팔기·재배포는 안 돼요.</li></ul></details></div></section>
+
+<section class="sec" id="form"><div class="sh"><span class="idx">08</span><h2>신청 양식</h2><span class="pen">채워서 복사해 주세요</span><p>아트머그 「작가에게 문의」로 보내 주시면 돼요.</p></div>
+  <div class="form"><span class="tape"></span><label class="fld wide"><span>시간표에 들어갈 내용 <i>*</i></span><textarea rows="2" placeholder="방송 요일, 하루 방송 횟수, 메모 칸이 필요한지 적어 주세요."></textarea></label><label class="fld wide"><span>원하는 분위기·색·키워드 <i>*</i></span><textarea rows="2" placeholder="예) 파스텔 하늘색, 바다, 귀여운 느낌"></textarea></label><label class="fld"><span>첫 사용 희망일</span><input type="date"></label>
+  <div class="send"><p><b data-plan-name></b> · <b data-total></b><br>캐릭터·참고 이미지는 아트머그 문의 창에 첨부해 주세요.</p><a class="b pri" href="#">양식 복사</a></div></div></section>
+</main>
+<p class="foot">TEMIS · see you next week ♡</p>
+<script src="drafts.js"></script>
+</body></html>
