@@ -130,7 +130,7 @@ export default function Page() {
       `구성: ${est.plan.name} (${won(est.plan.price)})`,
       `옵션: ${est.lines.length ? est.lines.map((l) => `${l.name}(${l.label})`).join(", ") : "없음"}`,
       `예상 견적: ${won(est.total)}${est.hasAsk ? " + 별도 문의" : ""}`,
-      `오마카세: ${omakase ? "예" : "아니요"}`,
+      `${pricing.options.find((o) => o.id === "omakase")?.name ?? "오마카세"}: ${omakase ? "예" : "아니요"}`,
       ...doc.form.fields.filter(visible).map((f) => `${f.label}: ${(form[f.id] ?? "").trim()}`),
     ];
     return lines.join("\n");

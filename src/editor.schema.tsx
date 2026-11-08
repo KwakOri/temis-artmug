@@ -80,6 +80,14 @@ export default defineSchema({
     "works.count": ["작업물 칸 제목의 {숫자}와 후기 칸 아래 문구에 들어가요."],
     "process.body": [(d) => `{횟수}는 기본 수정 횟수(지금: ${d.pricing.revisions}회)로 바뀌어요.`],
     "pricing.period": ["가격 칸 설명과 영수증에 같이 들어가요."],
+    "pricing.plans.price": ["원 단위예요. 비율(%) 옵션 금액도 이 값으로 다시 계산돼요."],
+    "pricing.options.value": [
+      (d, p) => {
+        const o = d.pricing.options[p[2] as number];
+        return o?.kind === "percent" ? "고른 구성 가격의 %예요(100이면 기본가만큼 추가)." : o?.kind === "ask" ? "별도 문의 옵션이라 이 값은 안 쓰여요." : "원 단위예요. 할인은 음수로 적어요(예: -10000).";
+      },
+      "가격 방식(정액·비율·별도 문의)은 칸 목록에서 바꿔요.",
+    ],
     "form.fields.placeholder": ["신청 양식 칸 안에 흐리게 보이는 예시 문구예요."],
   },
   bulk: {

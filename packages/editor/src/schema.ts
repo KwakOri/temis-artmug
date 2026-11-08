@@ -36,8 +36,8 @@ export interface BulkSpec {
   note?: string;
 }
 
-/** 칸마다 입력창 아래 붙는 설명. 함수면 지금 내용(d)을 보고 만든다. */
-export type Hint = string | ((d: any) => string);
+/** 칸마다 입력창 아래 붙는 설명. 함수면 지금 내용(d)과 그 칸의 전체 경로(path)를 보고 만든다. */
+export type Hint = string | ((d: any, path: Path) => string);
 
 export interface Schema<D extends object = Record<string, Json>> {
   /** 저장할 깃허브 저장소 */
@@ -98,18 +98,19 @@ export const isHidden = (s: Schema<any>, path: Path) => {
 };
 export const photoOf = (s: Schema<any>, path: Path) => s.photos?.[keyOf(path)];
 
-/** 미리보기에서 누른 칸을 어떻게 고칠지: 글자는 그 자리 입력창, 사진은 사진 바꾸기, 나머지(금액·종류·목록·순서)는 칸 목록으로 */
-export function kindOf(s: Schema<any>, path: Path, v: Json): "text" | "photo" | "panel" | null {
+/** 미리보기에서 누른 칸을 어떻게 고칠지: 글자·숫자는 그 자리 입력창, 사진은 사진 바꾸기, 나머지(고르기·참거짓·목록·순서)는 칸 목록으로 */
+export function kindOf(s: Schema<any>, path: Path, v: Json): "text" | "number" | "photo" | "panel" | null {
   if (v === undefined || isHidden(s, path)) return null;
   if (photoOf(s, path)) return "photo";
-  return typeof v === "string" && !choicesOf(s, nameOf(path), keyOf(path)) ? "text" : "panel";
+  if (choicesOf(s, nameOf(path), keyOf(path))) return "panel";
+  return typeof v === "string" ? "text" : typeof v === "number" ? "number" : "panel";
 }
 
 /** "후기 › 3번 › 본문" */
 export const describe = (s: Schema<any>, path: Path) =>
   path.map((x, i) => (typeof x === "number" ? `${x + 1}번` : labelOf(s, x, keyOf(path.slice(0, i + 1))))).join(" › ");
 
-export const hintsFor = (s: Schema<any>, path: Path, d: Json) => (s.hints?.[keyOf(path)] ?? []).map((h) => (typeof h === "function" ? h(d) : h));
+export const hintsFor = (s: Schema<any>, path: Path, d: Json) => (s.hints?.[keyOf(path)] ?? []).map((h) => (typeof h === "function" ? h(d, path) : h));
 
 /** 내용 안의 모든 사진: 사진 이름 → 사진 설정(빈 값 제외) */
 export function photosIn(s: Schema<any>, d: Json): Map<string, PhotoSpec> {

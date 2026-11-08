@@ -156,7 +156,8 @@ export default function Price({ brand, plans, options, planId, setPlanId, picked
                           {o.name}
                         </span>
                         <span aria-hidden className="flex-1 min-w-3 self-end mb-[6px] border-b-2 border-dotted border-[#1b1612]/20" />
-                        <span data-edit={`pricing.options.${oi}.value`} className="shrink-0">
+                        {/* 별도 견적은 값이 안 쓰여서 가격 방식(칸 목록)으로 보낸다 */}
+                        <span data-edit={`pricing.options.${oi}.${o.kind === "ask" ? "kind" : "value"}`} className="shrink-0">
                           <Tag o={o} plan={plan} />
                         </span>
                       </span>
@@ -188,11 +189,16 @@ export default function Price({ brand, plans, options, planId, setPlanId, picked
                 <p className="text-center font-[BagelFat] text-xl tracking-wide">{brand} 주문서</p>
                 <p className="text-center text-[12px] text-[#1b1612]/55 mt-0.5">맞춤 주간 시간표 · 예상 견적</p>
                 <div className="my-3 border-t-2 border-dashed border-[#1b1612]/30" />
-                <Line left={plan.name} right={num(plan.price)} />
+                <Line left={<span data-edit={`pricing.plans.${plans.indexOf(plan)}.name`}>{plan.name}</span>} right={num(plan.price)} />
                 {items.map((o) => (
                   <Line
                     key={o.id}
-                    left={o.kind === "percent" ? `${o.name} ${o.value}%` : o.name}
+                    left={
+                      <>
+                        <span data-edit={`pricing.options.${options.indexOf(o)}.name`}>{o.name}</span>
+                        {o.kind === "percent" && ` ${o.value}%`}
+                      </>
+                    }
                     right={o.kind === "ask" ? "별도 견적" : o.kind === "percent" ? `+${num(percentAmount(o, plan))}` : o.value === 0 ? "무료" : `+${num(o.value)}`}
                   />
                 ))}
@@ -201,7 +207,7 @@ export default function Price({ brand, plans, options, planId, setPlanId, picked
                     <div className="my-2 border-t border-dashed border-[#1b1612]/25" />
                     <Line left="소계" right={num(subtotal)} />
                     {discounts.map((o) => (
-                      <Line key={o.id} left={`${o.name} 할인`} right={`-${num(o.value)}`} hl />
+                      <Line key={o.id} left={<><span data-edit={`pricing.options.${options.indexOf(o)}.name`}>{o.name}</span> 할인</>} right={`-${num(o.value)}`} hl />
                     ))}
                   </>
                 )}
@@ -217,7 +223,7 @@ export default function Price({ brand, plans, options, planId, setPlanId, picked
                   </p>
                 )}
                 <div className="my-3 border-t-2 border-dashed border-[#1b1612]/30" />
-                <Line left={<span data-edit="pricing.revisions">수정 {revisions}회</span>} right={<span data-edit="pricing.period">{period}</span>} />
+                <Line left={<span data-edit={picked.has("omakase") ? "pricing.omakaseRevisions" : "pricing.revisions"}>수정 {revisions}회</span>} right={<span data-edit="pricing.period">{period}</span>} />
                 <div aria-hidden className="barcode mt-4 h-11" />
                 <p className="mt-2 text-center text-[11.5px] text-[#1b1612]/50 " style={{ fontFamily: '"Pretendard Variable", Pretendard, sans-serif' }}>최종 금액은 아트머그 결제 화면 기준이에요.</p>
               </div>

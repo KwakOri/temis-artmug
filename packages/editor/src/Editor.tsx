@@ -1,10 +1,10 @@
 // 공통 편집기(/edit): 칸 목록(schema)을 읽어 칸을 그려 고치고, 깃허브 저장소의 content.json(+새 사진)으로 저장한다.
 // 저장하면 GitHub Actions가 다시 배포해 1~2분 뒤 상세페이지에 적용된다.
 // 오른쪽 미리보기는 ./?draft&edit(localStorage의 고치는 중인 내용)를 띄운다.
-// 미리보기의 글자를 누르면 그 자리 팝오버(폰은 아래 시트)에서 원문을 고치고, 사진은 사진 바꾸기, 금액·목록은 왼쪽 칸 목록의 그 줄로 옮겨 간다(page.ts).
+// 미리보기의 글자·숫자를 누르면 그 자리 팝오버(폰은 아래 시트)에서 고치고, 사진은 사진 바꾸기, 고르기·목록은 왼쪽 칸 목록의 그 줄로 옮겨 간다(page.ts).
 // 손님마다 다른 것은 schema뿐이다. 여기에 손님 이름·칸 이름을 적지 않는다.
 import { ArrowDown, ArrowUp, ExternalLink, ImagePlus, ListTree, MousePointerClick, Plus, Settings, Trash2 } from "lucide-react";
-import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type Ref } from "react";
 import { DRAFT_KEY, PENDING_KEY, fetchPublished, merge, readDraft } from "./content";
 import { forgetToken, getToken, repoOf } from "./github";
 import { SIZES, makePhoto, toDataUrl } from "./image";
@@ -187,6 +187,38 @@ function Field({ name, path, value, onChange }: { name: string; path: Path; valu
 
 type Sel = { path: Path; rect: Rect; orig: Json };
 
+/** 팝오버의 숫자 칸: 쓰는 동안은 글자로 들고 있다가 숫자가 되면 바로 반영한다(빈칸·「-」만 쓴 중간 상태는 반영 안 함).
+ *  쉼표·띄어쓰기는 빼고 읽는다. 폰 숫자 자판에 빼기가 없어서 부호 바꾸기 단추를 둔다. */
+function NumberField({ value, sheet, onChange, inputRef }: { value: number; sheet: boolean; onChange: (v: number) => void; inputRef: Ref<HTMLInputElement> }) {
+  const [raw, setRaw] = useState(String(value));
+  useEffect(() => {
+    if (Number(raw.replace(/[,\s]/g, "")) !== value) setRaw(String(value));
+  }, [value]);
+  const set = (t: string) => {
+    setRaw(t);
+    const n = Number(t.replace(/[,\s]/g, ""));
+    if (t.trim() !== "" && t.trim() !== "-" && Number.isFinite(n)) onChange(n);
+  };
+  const bad = raw.trim() === "" || !Number.isFinite(Number(raw.replace(/[,\s]/g, "")));
+  return (
+    <div className="mt-2 flex items-center gap-2">
+      <input
+        ref={inputRef}
+        type="text"
+        inputMode="numeric"
+        value={raw}
+        onChange={(e) => set(e.target.value)}
+        aria-invalid={bad}
+        className={`${input} font-mono ${sheet ? "text-base" : ""} ${bad ? "border-red-400" : ""}`}
+      />
+      <button type="button" onClick={() => set(raw.trim().startsWith("-") ? raw.trim().slice(1) : `-${raw.trim()}`)} className="h-9 shrink-0 rounded-full bg-ed-soft px-3 text-[13px] font-bold" title="부호 바꾸기">
+        ±
+      </button>
+      <span className="shrink-0 font-mono text-[12.5px] text-ed-ink/50">{bad ? "숫자만" : value.toLocaleString("ko-KR")}</span>
+    </div>
+  );
+}
+
 /** 미리보기에서 누른 글자·사진을 고치는 창. PC는 누른 자리 옆 팝오버, 폰(sheet)은 아래에서 올라오는 시트.
  *  고치는 대로 미리보기에 바로 보이고, 「취소」는 열기 전 값으로 되돌린다. 저장(커밋)은 위의 「저장」에서 한 번에. */
 function InlineEdit({
@@ -209,13 +241,14 @@ function InlineEdit({
   onSheetHeight: (h: number) => void;
 }) {
   const box = useRef<HTMLDivElement>(null);
-  const field = useRef<HTMLTextAreaElement>(null);
+  const field = useRef<HTMLTextAreaElement & HTMLInputElement>(null);
   const photoIn = useRef<HTMLInputElement>(null);
   const { schema, pending, pick } = useContext(Ctx);
   const [h, setH] = useState(220);
   const [kb, setKb] = useState(0);
   const value = getIn(doc, sel.path);
-  const photo = kindOf(schema, sel.path, value) === "photo";
+  const kind = kindOf(schema, sel.path, value);
+  const photo = kind === "photo";
   const cancel = () => {
     onEdit(sel.path, sel.orig);
     onClose();
@@ -309,6 +342,8 @@ function InlineEdit({
             }}
           />
         </div>
+      ) : kind === "number" ? (
+        <NumberField key={sel.path.join(".")} value={value as number} sheet={sheet} onChange={(v) => onEdit(sel.path, v)} inputRef={field} />
       ) : (
         <textarea
           ref={field}
@@ -713,7 +748,7 @@ export default function Editor({ schema }: { schema: Schema<any> }) {
         >
           <div className="flex items-center gap-2 border-b border-ed-line bg-white px-3 py-1.5 text-[12.5px]">
             <MousePointerClick size={15} className={clickEdit ? "text-[#2f6bff]" : "text-ed-ink/40"} />
-            <span className="flex-1 text-ed-ink/70">{clickEdit ? "점선 글자를 누르면 바로 고쳐요. 사진·금액·목록은 칸 목록으로 옮겨 가요." : "미리보기를 손님처럼 눌러 볼 수 있어요."}</span>
+            <span className="flex-1 text-ed-ink/70">{clickEdit ? "점선 글자·숫자를 누르면 바로 고쳐요. 사진은 사진 바꾸기, 가격 방식·목록은 칸 목록으로 옮겨 가요." : "미리보기를 손님처럼 눌러 볼 수 있어요."}</span>
             <label className="flex shrink-0 items-center gap-1.5 font-bold">
               <input
                 type="checkbox"
